@@ -10,7 +10,7 @@ export function Gallery() {
     <Carousel
     loop={true}
     autoplay={true}
-    className="rounded-xl"
+    className="overflow-hidden"
     autoplayDelay={3000}
     transition={
       { type: "tween", duration: 0.3 }
@@ -19,27 +19,27 @@ export function Gallery() {
       <img
         src={promo1}
         alt="image 1"
-        className="h-full w-full object-cover object-center"
+        className="h-full w-full object-cover rounded-xl object-center"
       />
       <img
         src={promo2}
         alt="image 2"
-        className="h-full w-full object-cover object-center"
+        className="h-full w-full object-cover rounded-xl object-center"
       />
       <img
         src={promo3}
         alt="image 3"
-        className="h-full w-full object-cover object-center"
+        className="h-full w-full object-cover rounded-xl object-center"
       />
       <img
         src={promo4}
         alt="image 4"
-        className="h-full w-full object-cover object-center"
+        className="h-full w-full object-cover rounded-xl object-center"
       />
       <img
         src={promo5}
         alt="image 5"
-        className="h-full w-full object-cover object-center"
+        className="h-full w-full object-cover rounded-xl object-center"
       />
     </Carousel>
   );

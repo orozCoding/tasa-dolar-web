@@ -9,7 +9,6 @@ import themeSwitchIconWhite from '/theme-switch-white.svg'
 import { useEffect, useState } from 'react'
 
 function App() {
-
   const [darkMode, setDarkMode] = useState(false)
 
   useEffect(() => {
@@ -30,11 +29,12 @@ function App() {
 
   return (
     <div className="p-10 text-black dark:text-white flex flex-col md:flex-row items-center justify-center gap-4 relative">
-        <img
-          className="w-10 rounded-md absolute top-4 left-4 cursor-pointer"
-          src={darkMode ? themeSwitchIconWhite: themeSwitchIcon}
-          onClick={() => setDarkMode(!darkMode)}
-        />
+      {/* Theme switcher */}
+      <img
+        className="w-10 rounded-md absolute top-4 left-4 cursor-pointer"
+        src={darkMode ? themeSwitchIconWhite: themeSwitchIcon}
+        onClick={() => setDarkMode(!darkMode)}
+      />
 
       {/* Logo, title, description, banners */}
       <div className="flex flex-col items-center justify-center gap-4 w-full md:w-1/2">

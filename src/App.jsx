@@ -9,8 +9,11 @@ function App() {
 
 
   return (
-    <div className="text-black flex flex-col items-center justify-center gap-4">
-      <div className="flex flex-col items-center justify-center gap-4">
+    <div className="text-black flex flex-col md:flex-row items-center justify-center gap-4">
+
+
+      {/* Logo, title, description, banners */}
+      <div className="flex flex-col items-center justify-center gap-4 w-full md:w-1/2">
         <img className="w-20 rounded-md" src={logo} alt="logo" />
         <h1 className="text-4xl font-bold text-center">
           Tasa Dolar Venezuela
@@ -20,18 +23,18 @@ function App() {
           <span>Realiza cálculos en SEGUNDOS</span>
           <span>Arma solicitudes de pago</span>
         </div>
+        <div className="w-full flex gap-10 flex-wrap items-center justify-center">
+          <a href={urls.android} target="_blank" rel="noreferrer">
+            <img className="w-40" src={playBanner} alt="play store banner" />
+          </a>
+          <a href={urls.ios} target="_blank" rel="noreferrer">
+            <img className="w-40" src={appBanner} alt="app store banner" />
+          </a>
+        </div>
       </div>
 
-      <div className="w-full flex gap-10 flex-wrap items-center justify-center">
-        <a href={urls.android} target="_blank" rel="noreferrer">
-          <img className="w-40" src={playBanner} alt="play store banner" />
-        </a>
-        <a href={urls.ios} target="_blank" rel="noreferrer">
-          <img className="w-40" src={appBanner} alt="app store banner" />
-        </a>
-      </div>
-
-      <div className="h-140">
+      {/* Carousel */}
+      <div className="h-140 md:h-200 w-full md:w-1/2">
         <Gallery />
       </div>
     </div>

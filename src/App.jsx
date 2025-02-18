@@ -4,20 +4,45 @@ import playBanner from '/play_store_banner.png'
 import appBanner from '/app_store_banner.svg'
 import urls from './constants/urls'
 import logo from '/logo.png'
+import themeSwitchIcon from '/theme-switch.svg'
+import themeSwitchIconWhite from '/theme-switch-white.svg'
+import { useEffect, useState } from 'react'
 
 function App() {
 
+  const [darkMode, setDarkMode] = useState(false)
+
+  useEffect(() => {
+    window.matchMedia("(prefers-color-scheme: dark)").matches ?
+      setDarkMode(true) :
+      setDarkMode(false)
+  }, [])
+
+  useEffect(() => {
+    if(darkMode) {
+      document.documentElement.classList.remove('light')
+      document.documentElement.classList.add('dark')
+    } else {
+      document.documentElement.classList.add('light')
+      document.documentElement.classList.remove('dark')
+    }
+  }, [darkMode])
 
   return (
-    <div className="text-black flex flex-col md:flex-row items-center justify-center gap-4">
-
+    <div className="p-10 text-black dark:text-white flex flex-col md:flex-row items-center justify-center gap-4 relative">
+        <img
+          className="w-10 rounded-md absolute top-4 left-4 cursor-pointer"
+          src={darkMode ? themeSwitchIconWhite: themeSwitchIcon}
+          onClick={() => setDarkMode(!darkMode)}
+        />
 
       {/* Logo, title, description, banners */}
       <div className="flex flex-col items-center justify-center gap-4 w-full md:w-1/2">
         <img className="w-20 rounded-md" src={logo} alt="logo" />
-        <h1 className="text-4xl font-bold text-center">
+        <h1 className="text-4xl font-bold text-center ">
           Tasa Dolar Venezuela
         </h1>
+
         <div className="text-center flex flex-col items-center justify-center">
           <span>Consulta la tasa del día</span>
           <span>Realiza cálculos en SEGUNDOS</span>

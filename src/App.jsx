@@ -23,7 +23,7 @@ function App() {
           <span>Realiza cálculos en SEGUNDOS</span>
           <span>Arma solicitudes de pago</span>
         </div>
-        <div className="w-full flex gap-10 flex-wrap items-center justify-center">
+        <div className="w-full flex gap-4 flex-wrap items-center justify-center">
           <a href={urls.android} target="_blank" rel="noreferrer">
             <img className="w-40" src={playBanner} alt="play store banner" />
           </a>

@@ -28,7 +28,7 @@ function App() {
   }, [darkMode])
 
   return (
-    <div className="p-10 text-black dark:text-white flex flex-col md:flex-row items-center justify-center gap-4 relative">
+    <div className="px-2 py-5 text-black dark:text-white flex flex-col md:flex-row items-center justify-center gap-4 relative">
       {/* Theme switcher */}
       <img
         className="w-10 rounded-md absolute top-4 left-4 cursor-pointer"
@@ -59,7 +59,7 @@ function App() {
       </div>
 
       {/* Carousel */}
-      <div className="h-140 md:h-200 w-full md:w-1/2">
+      <div className="md:w-1/2 h-[80vh] rounded-full text-center flex items-center">
         <Gallery />
       </div>
     </div>

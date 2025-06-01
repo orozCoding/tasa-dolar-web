@@ -28,7 +28,7 @@ function App() {
   }, [darkMode])
 
   return (
-    <div className="px-2 py-5 text-black dark:text-white flex flex-col md:flex-row items-center justify-center gap-4 relative">
+    <div className="w-full px-2 py-5 text-black dark:text-white flex flex-col md:flex-row items-center justify-center gap-4 relative">
       {/* Theme switcher */}
       <img
         className="w-10 rounded-md absolute top-4 left-4 cursor-pointer"
@@ -37,7 +37,7 @@ function App() {
       />
 
       {/* Logo, title, description, banners */}
-      <div className="flex flex-col items-center justify-center gap-4 w-full md:w-1/2">
+      {/* <div className="flex flex-col items-center justify-center gap-4 w-full md:w-1/2">
         <img className="w-20 rounded-md" src={logo} alt="logo" />
         <h1 className="text-4xl font-bold text-center ">
           Tasa Dolar Venezuela
@@ -56,12 +56,13 @@ function App() {
             <img className="w-40" src={appBanner} alt="app store banner" />
           </a>
         </div>
-      </div>
+      </div> */}
 
       {/* Carousel */}
-      <div className="md:w-1/2 h-[80vh] rounded-full text-center flex items-center">
+      {/* <div className="md:w-1/2 h-[80vh] rounded-full text-center flex items-center">
         <Gallery />
-      </div>
+      </div> */}
+      <div> En construcción... </div>
     </div>
   )
 }

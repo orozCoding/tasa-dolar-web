@@ -1,9 +1,9 @@
 import { Carousel } from "@material-tailwind/react";
 import indexImg from "/ss-index.png"
-import darkModeImg from "/ss-darkmode.png"
-import pagomovilImg from "/ss-pagomovil.png"
-import newsImg from "/ss-news.png"
+import pagoImg from "/ss-pagomovil.png"
+import historyImg from "/ss-history.png"
 import aboutImg from "/ss-about.png"
+import notificationsImg from "/ss-notifications.png"
 import { ArrowLeft, ArrowRight } from "../utils/arrowIcons"
  
 export function Gallery() {
@@ -32,7 +32,15 @@ export function Gallery() {
     )
   }
 
-  const imgClass = "h-full m-auto object-contain rounded-xl object-center cursor-pointer shadow-lg border border-gray-200"
+  const imgClass = "h-full m-auto object-contain rounded-xl object-center cursor-pointer"
+
+  const images =[
+    [indexImg, "Home", "/ss-index.png"],
+    [pagoImg, "Pagomovil", "/ss-pagomovil.png"],
+    [historyImg, "Historial", "/ss-history.png"],
+    [aboutImg, "Acerca", "/ss-about.png"],
+    [notificationsImg, "Notificaciones", "/ss-notifications.png"],
+  ]
 
   return (
     <Carousel
@@ -46,36 +54,16 @@ export function Gallery() {
       prevArrow={({ loop, handlePrev, firstIndex }) => prevArrow(loop, handlePrev, firstIndex)}
       nextArrow={({ loop, handleNext, lastIndex }) => nextArrow(loop, handleNext, lastIndex)}
    >
-      <img
-        src={indexImg}
-        alt="image 1"
-        className={imgClass}
-        onClick={() => window.open("/ss-index.png", "_blank")}
-      />
-      <img
-        src={darkModeImg}
-        alt="image 2"
-        className={imgClass}
-        onClick={() => window.open("/ss-darkmode.png", "_blank")}
-      />
-      <img
-        src={pagomovilImg}
-        alt="image 3"
-        className={imgClass}
-        onClick={() => window.open("/ss-pagomovil.png", "_blank")}
-      />
-      <img
-        src={newsImg}
-        alt="image 4"
-        className={imgClass}
-        onClick={() => window.open("/ss-news.png", "_blank")}
-      />
-      <img
-        src={aboutImg}
-        alt="image 5"
-        className={imgClass}
-        onClick={() => window.open("/ss-about.png", "_blank")}
-      />
+      {images.map(([image, title, src]) => {
+        return (
+          <img
+            src={image}
+            alt={title}
+            className={imgClass}
+            onClick={() => window.open(src, "_blank")}
+          />
+        );
+      })}
     </Carousel>
   );
 }

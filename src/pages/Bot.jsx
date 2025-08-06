@@ -47,7 +47,7 @@ function Bot() {
 
         <div className="flex flex-col items-center gap-8 mb-6">
           <p>
-            <a href="https://t.me/TasaDolarVenezuelaBot" target="_blank" rel="noreferrer">
+            <a href="https://t.me/TasaDolarVenezuelaBot" target="_blank" rel="noreferrer" className="text-blue-500 hover:text-blue-600">
             @TasaDolarVenezuelaBot
             </a>
             {" "}te mantiene al día con la tasa del dólar y euro BCV, y el promedio USDT de Binance.
@@ -61,26 +61,37 @@ function Bot() {
         <div className="grid md:grid-cols-2 gap-6">
           <FeatureBox icon="💬" title="Comandos Básicos">
             <ul className="space-y-2">
-              <li><code className="bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded">/ayuda</code> - Obtén la lista de comandos</li>
-              <li><code className="bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded">/notificar</code> - Activa las notificaciones para el chat actual</li>
-              <li><code className="bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded">/tasas</code> - Obtén todas las tasas actuales</li>
-              <li><code className="bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded">/bcv</code> - Obtén todas las tasas BCV actuales</li>
-              <li><code className="bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded">/usdt</code> - Obtén el último promedio USDT de Binance</li>
+              <li><code className="bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded">/tasas</code> - Muestra todas las tasas actuales</li>
+              <li><code className="bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded">/bcv</code> - Muestra todas las tasas BCV actuales</li>
+              <li><code className="bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded">/usdt</code> - Muestra el promedio USDT Binance más reciente</li>
+              <li><code className="bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded">/ayuda</code> - Muestra los comandos disponibles</li>
+              <li><code className="bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded">/activar_notificaciones</code> - Activa notificaciones (privado/admin)</li>
+              <li><code className="bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded">/desactivar_notificaciones</code> - Desactiva notificaciones</li>
+              <li><code className="bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded">/activar_comandos</code> - Permite comandos a usuarios del grupo</li>
+              <li><code className="bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded">/desactivar_comandos</code> - Prohibe comandos a usuarios</li>
             </ul>
           </FeatureBox>
 
           <FeatureBox icon="🔔" title="Notificaciones">
             <ul className="space-y-2">
-              <li>• Notificación diaria sobre nuevas tasas BCV</li>
-              <li>• 3 Notificaciones diarias sobre promedio USDT de Binance</li>
-              <li>• También puedes solicitar los precios manualmente con los comandos <code>/bcv</code> <code>/usdt</code> <code>/usd</code> <code>/euro</code> <code>/dolar</code> y más</li>
+              <li>• Notificaciones diarias sobre cambios en las tasas BCV</li>
+              <li>• Múltiples notificaciones diarias sobre el promedio USDT de Binance durante el día</li>
+              <li>• También puedes solicitar los precios manualmente con los comandos <code>/tasas</code> <code>/bcv</code> <code>/usdt</code> y más</li>
             </ul>
           </FeatureBox>
 
           <FeatureBox icon="📊" title="Obtener acceso">
-            <p>
-              Envía un pago de USD $1.99 x cada mes de acceso que desees (puedes pagar meses por adelantado) y escríbele a <a href="https://t.me/TasaDolarVenezuelaBot" target="_blank" rel="noreferrer">@TasaDolarVenezuelaBot</a> el comando <code>/registro</code> seguido de la referencia de tu pago.
-            </p>
+            <div className="space-y-3">
+              <p>
+                El acceso al bot cuesta <strong>$1.99 USD por mes</strong>. Puedes pagar por adelantado varios meses para mayor comodidad.
+              </p>
+              <p>
+                <strong>Ejemplo:</strong> Para 3 meses de acceso = $1.99 × 3 = <strong>$5.97 USD</strong>
+              </p>
+              <p>
+                Después de realizar tu pago, escríbele a <a href="https://t.me/TasaDolarVenezuelaBot" target="_blank" rel="noreferrer" className="text-blue-500 hover:text-blue-600">@TasaDolarVenezuelaBot</a> el comando <code className="bg-gray-300 dark:bg-gray-600 px-2 py-1 rounded">/registrar</code> seguido de la información para validar tu pago (método, referencia, monto, etc).
+              </p>
+            </div>
           </FeatureBox>
 
           <FeatureBox icon="💰" title="Métodos de pago">

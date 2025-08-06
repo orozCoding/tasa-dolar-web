@@ -109,11 +109,8 @@ function Bot() {
       {/* Call to Action */}
       <div className="max-w-2xl w-full text-center">
         <h2 className="text-2xl font-bold mb-4">¿Listo para empezar?</h2>
-        <p className="text-gray-600 dark:text-gray-300 mb-6">
-          Únete a cientos de usuarios que ya utilizan nuestro bot para mantenerse actualizados con la tasa del dólar.
-        </p>
         <a 
-          href="https://t.me/your_bot_username" 
+          href="https://t.me/tasadolarvenezuelabot" 
           target="_blank" 
           rel="noopener noreferrer"
           className="inline-block bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-8 rounded-lg transition-colors"

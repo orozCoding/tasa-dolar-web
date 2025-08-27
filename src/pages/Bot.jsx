@@ -3,6 +3,7 @@ import botLogo from '/bot_logo.png'
 import themeSwitchIcon from '/theme-switch.svg'
 import themeSwitchIconWhite from '/theme-switch-white.svg'
 import FeatureBox from '../components/FeatureBox'
+import BotCommand from '../components/BotCommand'
 
 function Bot() {
   const [darkMode, setDarkMode] = useState(false)
@@ -22,6 +23,19 @@ function Bot() {
       document.documentElement.classList.remove('dark')
     }
   }, [darkMode])
+
+  const commands = [
+    { command: 'tasas', description: 'Muestra todas las tasas actuales' },
+    { command: 'bcv', description: 'Muestra todas las tasas BCV actuales' },
+    { command: 'usdt', description: 'Muestra el promedio USDT Binance más reciente' },
+    { command: 'ayuda', description: 'Muestra los comandos disponibles' },
+    { command: 'activar_notificaciones', description: 'Activa notificaciones (privado/admin)' },
+    { command: 'desactivar_notificaciones', description: 'Desactiva notificaciones' },
+    { command: 'activar_comandos', description: 'Permite comandos a usuarios del grupo' },
+    { command: 'desactivar_comandos', description: 'Prohibe comandos a usuarios' },
+    { command: 'historial_bcv', description: 'Muestra el historial de tasas BCV' },
+    { command: 'historial_usdt', description: 'Muestra el historial de promedios USDT' },
+  ]
 
   return (
     <div className="w-full px-2 py-8 text-black dark:text-white flex flex-col items-center justify-center gap-8 relative min-h-screen">
@@ -61,15 +75,8 @@ function Bot() {
         <div className="grid md:grid-cols-2 gap-6">
           <FeatureBox icon="💬" title="Comandos Básicos">
             <ul className="space-y-2">
-              <li><code className="bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded">/tasas</code> - Muestra todas las tasas actuales</li>
-              <li><code className="bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded">/bcv</code> - Muestra todas las tasas BCV actuales</li>
-              <li><code className="bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded">/usdt</code> - Muestra el promedio USDT Binance más reciente</li>
-              <li><code className="bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded">/ayuda</code> - Muestra los comandos disponibles</li>
-              <li><code className="bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded">/activar_notificaciones</code> - Activa notificaciones (privado/admin)</li>
-              <li><code className="bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded">/desactivar_notificaciones</code> - Desactiva notificaciones</li>
-              <li><code className="bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded">/activar_comandos</code> - Permite comandos a usuarios del grupo</li>
-              <li><code className="bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded">/desactivar_comandos</code> - Prohibe comandos a usuarios</li>
-            </ul>
+              {commands.map((command, index) => <BotCommand key={index} command={command.command} description={command.description} />)}
+{}          </ul>
           </FeatureBox>
 
           <FeatureBox icon="🔔" title="Notificaciones">

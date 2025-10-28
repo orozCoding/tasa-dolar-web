@@ -46,7 +46,7 @@ function Home() {
         <div className="text-center flex flex-col gap-4 items-center justify-center">
           <div class="w-full flex gap-2 text-xl text-center justify-center">
             <span>Más de </span>
-            <span class="w-18 font-bold">
+            <span class="w-20 font-bold">
               <CountUp start={99900} end={100000} duration={10} />
             </span>
             <span>descargas</span>

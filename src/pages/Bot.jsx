@@ -30,7 +30,7 @@ function Bot() {
     { command: 'bcv', description: 'Muestra todas las tasas BCV actuales' },
     { command: 'usdt', description: 'Muestra el promedio USDT Binance más reciente' },
     { command: 'historial_bcv', description: 'Muestra el historial de tasas BCV' },
-    { command: 'historial_usdt', description: 'Muestra el historial de promedios USDT' }
+    { command: 'historial_usdt', description: 'Muestra el historial de promedios USDT' },
     { command: 'activar_notificaciones', description: 'Activa notificaciones (privado/admin)' },
     { command: 'desactivar_notificaciones', description: 'Desactiva notificaciones' },
     { command: 'activar_comandos', description: 'Permite comandos a usuarios del grupo' },

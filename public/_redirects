@@ -1,1 +1,4 @@
+# Data endpoint -> serverless proxy (must come before the SPA catch-all).
+/api/tasa    /.netlify/functions/tasa    200
+# SPA fallback.
 /*    /index.html   200

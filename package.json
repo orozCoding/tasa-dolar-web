@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@material-tailwind/react": "^2.1.10",
+    "@netlify/blobs": "^8.1.0",
     "@tailwindcss/vite": "^4.0.6",
     "react": "^19.0.0",
     "react-countup": "^6.5.3",

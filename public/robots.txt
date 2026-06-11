@@ -1,0 +1,7 @@
+# The data endpoint must never be crawled.
+User-agent: *
+Disallow: /api/
+
+# Note: /tasa is intentionally NOT disallowed here so crawlers can fetch it and
+# honor its `noindex` (X-Robots-Tag + meta). A robots.txt Disallow would block the
+# fetch and the noindex would never be seen.

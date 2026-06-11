@@ -1,0 +1,18 @@
+# Build/publish settings stay in the Netlify UI (Vite default: `npm run build` -> dist).
+# This file only adds the serverless function and the no-index headers.
+
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+
+# Keep the brecha page and its data endpoint out of search indexes.
+[[headers]]
+  for = "/tasa"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
+
+[[headers]]
+  for = "/api/tasa"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
+    Cache-Control = "no-store"

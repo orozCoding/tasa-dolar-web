@@ -174,7 +174,7 @@ function Brecha({ data }) {
             <CountUp end={percent} decimals={2} duration={1.1} decimal="," separator="." suffix="%" />
           </div>
           <p className="mt-3 max-w-md text-sm text-gray-500 dark:text-gray-400">
-            El dólar paralelo está{' '}
+            El USDT Binance está{' '}
             <span className="font-semibold text-black dark:text-white">{formatBs(percent)}%</span> por
             encima de la tasa oficial del BCV.
           </p>

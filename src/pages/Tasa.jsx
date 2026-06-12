@@ -144,6 +144,24 @@ function Brecha({ data }) {
 
   return (
     <section className="w-full max-w-2xl flex flex-col gap-6">
+      {/* Rates */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <RateCard
+          label="BCV · Oficial"
+          accent="border-l-red-600"
+          labelColor="text-red-600"
+          price={data.bcv?.price}
+          date={data.bcv?.date}
+        />
+        <RateCard
+          label="Binance USDT · Paralelo"
+          accent="border-l-yellow-500"
+          labelColor="text-yellow-600 dark:text-yellow-500"
+          price={data.binance_usdt?.price}
+          date={data.binance_usdt?.date}
+        />
+      </div>
+
       {/* Hero */}
       <div className="relative overflow-hidden rounded-3xl border border-gray-200 dark:border-gray-800 bg-gradient-to-br from-white to-gray-100 dark:from-gray-900 dark:to-black p-8 shadow-xl">
         <div className="absolute -top-24 -right-24 h-56 w-56 rounded-full bg-red-500/10 blur-3xl" />
@@ -161,24 +179,6 @@ function Brecha({ data }) {
             encima de la tasa oficial del BCV.
           </p>
         </div>
-      </div>
-
-      {/* Rates */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <RateCard
-          label="BCV · Oficial"
-          accent="border-l-red-600"
-          labelColor="text-red-600"
-          price={data.bcv?.price}
-          date={data.bcv?.date}
-        />
-        <RateCard
-          label="Binance USDT · Paralelo"
-          accent="border-l-yellow-500"
-          labelColor="text-yellow-600 dark:text-yellow-500"
-          price={data.binance_usdt?.price}
-          date={data.binance_usdt?.date}
-        />
       </div>
 
       {/* Share */}

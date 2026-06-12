@@ -80,7 +80,7 @@ function Tasa() {
         <img className="w-16 rounded-md" src={logo} alt="Tasa Dolar Venezuela" />
         <h1 className="text-3xl font-bold text-center">Brecha del dólar</h1>
         <p className="text-sm text-gray-500 dark:text-gray-400 text-center max-w-md">
-          Diferencia entre la tasa oficial (BCV) y el dólar paralelo (Binance USDT).
+          Diferencia entre la tasa oficial (BCV) y el USDT Binance.
         </p>
       </div>
 
@@ -115,7 +115,7 @@ function Brecha({ data }) {
     '💵 Brecha cambiaria',
     '',
     `🏛️ BCV oficial: Bs. ${formatBs(data.bcv?.price)}`,
-    `📈 Paralelo USDT: Bs. ${formatBs(data.binance_usdt?.price)}`,
+    `📈 USDT Binance: Bs. ${formatBs(data.binance_usdt?.price)}`,
     '',
     `📊 Brecha: ${formatBs(percent)}%`,
     '',
@@ -154,7 +154,7 @@ function Brecha({ data }) {
           date={data.bcv?.date}
         />
         <RateCard
-          label="Binance USDT · Paralelo"
+          label="Binance USDT"
           accent="border-l-yellow-500"
           labelColor="text-yellow-600 dark:text-yellow-500"
           price={data.binance_usdt?.price}

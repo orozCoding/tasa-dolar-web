@@ -3,6 +3,9 @@ import CountUp from 'react-countup'
 import logo from '/logo.png'
 import themeSwitchIcon from '/theme-switch.svg'
 import themeSwitchIconWhite from '/theme-switch-white.svg'
+import playBanner from '/play_store_banner.png'
+import appBanner from '/app_store_banner.svg'
+import urls from '../constants/urls'
 
 const REFRESH_MS = 90_000
 
@@ -114,6 +117,27 @@ function Tasa() {
       )}
 
       {status === 'ok' && data?.brecha && <Brecha data={data} />}
+
+      <DownloadCTA />
+    </div>
+  )
+}
+
+function DownloadCTA() {
+  return (
+    <div className="mt-12 w-full max-w-2xl flex flex-col items-center gap-4 border-t border-gray-200 dark:border-gray-800 pt-10">
+      <h2 className="text-xl font-bold text-center">Descarga la app</h2>
+      <p className="text-sm text-gray-500 dark:text-gray-400 text-center max-w-md">
+        Consulta la tasa del día, calcula y recibe notificaciones desde tu teléfono.
+      </p>
+      <div className="w-full flex gap-4 flex-wrap items-center justify-center">
+        <a href={urls.android} target="_blank" rel="noreferrer">
+          <img className="w-40" src={playBanner} alt="Disponible en Google Play" />
+        </a>
+        <a href={urls.ios} target="_blank" rel="noreferrer">
+          <img className="w-40" src={appBanner} alt="Descargar en el App Store" />
+        </a>
+      </div>
     </div>
   )
 }
@@ -262,7 +286,7 @@ function RatesGrid({ data }) {
           <button
             onClick={() => setOpen((o) => !o)}
             aria-expanded={open}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-1.5 text-xs font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-red-500 to-yellow-500 px-6 py-2.5 text-sm font-bold text-white shadow-md hover:shadow-lg hover:brightness-105 active:scale-95 transition-all"
           >
             {open ? 'Ocultar porcentajes' : 'Ver porcentajes %'}
             <span className={`transition-transform ${open ? 'rotate-180' : ''}`}>⌄</span>

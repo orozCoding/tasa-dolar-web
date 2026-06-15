@@ -158,24 +158,7 @@ function Brecha({ data }) {
   return (
     <section className="w-full max-w-2xl flex flex-col gap-6">
       {/* Rates */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <RateCard
-          label="BCV · Oficial"
-          accent="border-l-red-600"
-          labelColor="text-red-600"
-          price={data.bcv?.price}
-          date={data.bcv?.date}
-          direction="up"
-        />
-        <RateCard
-          label="Binance USDT"
-          accent="border-l-yellow-500"
-          labelColor="text-yellow-600 dark:text-yellow-500"
-          price={data.binance_usdt?.price}
-          date={data.binance_usdt?.date}
-          direction="down"
-        />
-      </div>
+      <RatesGrid data={data} />
 
       {/* Hero */}
       <div className="relative overflow-hidden rounded-3xl border border-gray-200 dark:border-gray-800 bg-gradient-to-br from-white to-gray-100 dark:from-gray-900 dark:to-black p-8 shadow-xl">
@@ -246,8 +229,51 @@ function Brecha({ data }) {
   )
 }
 
-function RateCard({ label, accent, labelColor, price, date, direction }) {
+function RatesGrid({ data }) {
   const [open, setOpen] = useState(false)
+  const hasRates = (data.bcv?.price || 0) > 0 || (data.binance_usdt?.price || 0) > 0
+
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <RateCard
+          label="BCV · Oficial"
+          accent="border-l-red-600"
+          labelColor="text-red-600"
+          price={data.bcv?.price}
+          date={data.bcv?.date}
+          direction="up"
+          open={open}
+        />
+        <RateCard
+          label="Binance USDT"
+          accent="border-l-yellow-500"
+          labelColor="text-yellow-600 dark:text-yellow-500"
+          price={data.binance_usdt?.price}
+          date={data.binance_usdt?.date}
+          direction="down"
+          open={open}
+        />
+      </div>
+
+      {/* One shared toggle so both cards expand together and stay balanced. */}
+      {hasRates && (
+        <div className="flex justify-center">
+          <button
+            onClick={() => setOpen((o) => !o)}
+            aria-expanded={open}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-1.5 text-xs font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+          >
+            {open ? 'Ocultar porcentajes' : 'Ver porcentajes %'}
+            <span className={`transition-transform ${open ? 'rotate-180' : ''}`}>⌄</span>
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function RateCard({ label, accent, labelColor, price, date, direction, open }) {
   const up = direction === 'up'
   const sign = up ? '+' : '−'
   const stepColor = up ? 'text-green-600 dark:text-green-500' : 'text-red-600 dark:text-red-500'
@@ -266,18 +292,6 @@ function RateCard({ label, accent, labelColor, price, date, direction }) {
       <span className={`text-xs font-semibold uppercase tracking-widest ${labelColor}`}>{label}</span>
       <div className="mt-2 text-2xl font-bold">Bs. {formatBs(price)}</div>
       <div className="mt-1 text-xs text-gray-400">{date}</div>
-
-      {price > 0 && (
-        <button
-          onClick={() => setOpen((o) => !o)}
-          aria-expanded={open}
-          className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-gray-300 dark:border-gray-700 px-2.5 py-1 text-xs font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-        >
-          <span className={stepColor}>{sign}%</span>
-          {open ? 'Ocultar ajustes' : 'Ver ajustes'}
-          <span className={`transition-transform ${open ? 'rotate-180' : ''}`}>⌄</span>
-        </button>
-      )}
 
       {open && price > 0 && (
         <div className="mt-3 flex flex-col gap-1 border-t border-gray-200 dark:border-gray-800 pt-3">

@@ -9,6 +9,19 @@ const REFRESH_MS = 90_000
 const nf = new Intl.NumberFormat('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 const formatBs = (n) => (n == null ? '—' : nf.format(n))
 
+// Parse a user-typed amount. Accepts both conventions:
+//  - es-VE "1.234,56" (dot thousands, comma decimal)
+//  - plain "1234.56" / "1234,56" (single separator as decimal)
+const parseNum = (s) => {
+  const str = String(s ?? '').trim()
+  if (!str) return 0
+  const normalized =
+    str.includes('.') && str.includes(',')
+      ? str.replace(/\./g, '').replace(',', '.') // dot = thousands, comma = decimal
+      : str.replace(',', '.') // single separator → decimal
+  return parseFloat(normalized) || 0
+}
+
 function Tasa() {
   const [darkMode, setDarkMode] = useState(false)
   const [data, setData] = useState(null)
@@ -152,6 +165,7 @@ function Brecha({ data }) {
           labelColor="text-red-600"
           price={data.bcv?.price}
           date={data.bcv?.date}
+          direction="up"
         />
         <RateCard
           label="Binance USDT"
@@ -159,6 +173,7 @@ function Brecha({ data }) {
           labelColor="text-yellow-600 dark:text-yellow-500"
           price={data.binance_usdt?.price}
           date={data.binance_usdt?.date}
+          direction="down"
         />
       </div>
 
@@ -192,6 +207,9 @@ function Brecha({ data }) {
           {copied ? '¡Copiado!' : 'Copiar para compartir'}
         </button>
       </div>
+
+      {/* Calculator */}
+      <Calculator data={data} />
 
       {/* History */}
       {history.length > 0 && (
@@ -228,7 +246,19 @@ function Brecha({ data }) {
   )
 }
 
-function RateCard({ label, accent, labelColor, price, date }) {
+function RateCard({ label, accent, labelColor, price, date, direction }) {
+  const [open, setOpen] = useState(false)
+  const up = direction === 'up'
+  const sign = up ? '+' : '−'
+  const stepColor = up ? 'text-green-600 dark:text-green-500' : 'text-red-600 dark:text-red-500'
+
+  // BCV (official) shows the rate +1%..+10%; USDT shows it −1%..−10%.
+  const steps = Array.from({ length: 10 }, (_, idx) => {
+    const i = idx + 1
+    const factor = up ? 1 + i / 100 : 1 - i / 100
+    return { i, value: (price || 0) * factor }
+  })
+
   return (
     <div
       className={`rounded-2xl border border-gray-200 dark:border-gray-800 border-l-4 ${accent} bg-white/60 dark:bg-gray-900/60 p-5`}
@@ -236,6 +266,168 @@ function RateCard({ label, accent, labelColor, price, date }) {
       <span className={`text-xs font-semibold uppercase tracking-widest ${labelColor}`}>{label}</span>
       <div className="mt-2 text-2xl font-bold">Bs. {formatBs(price)}</div>
       <div className="mt-1 text-xs text-gray-400">{date}</div>
+
+      {price > 0 && (
+        <button
+          onClick={() => setOpen((o) => !o)}
+          aria-expanded={open}
+          className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-gray-300 dark:border-gray-700 px-2.5 py-1 text-xs font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+        >
+          <span className={stepColor}>{sign}%</span>
+          {open ? 'Ocultar ajustes' : 'Ver ajustes'}
+          <span className={`transition-transform ${open ? 'rotate-180' : ''}`}>⌄</span>
+        </button>
+      )}
+
+      {open && price > 0 && (
+        <div className="mt-3 flex flex-col gap-1 border-t border-gray-200 dark:border-gray-800 pt-3">
+          {steps.map((s) => (
+            <div key={s.i} className="flex items-center justify-between text-sm">
+              <span className={`font-semibold ${stepColor}`}>
+                {sign}
+                {s.i}%
+              </span>
+              <span className="tabular-nums">Bs. {formatBs(s.value)}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function Calculator({ data }) {
+  const [kind, setKind] = useState('bcv') // bcv | usdt | custom
+  const [customRate, setCustomRate] = useState('')
+  const [usd, setUsd] = useState('')
+  const [bs, setBs] = useState('')
+
+  const rate =
+    kind === 'bcv'
+      ? data.bcv?.price || 0
+      : kind === 'usdt'
+        ? data.binance_usdt?.price || 0
+        : parseNum(customRate)
+
+  const usdToBs = rate > 0 ? parseNum(usd) * rate : 0
+  const bsToUsd = rate > 0 ? parseNum(bs) / rate : 0
+
+  const options = [
+    { key: 'bcv', label: 'BCV' },
+    { key: 'usdt', label: 'USDT' },
+    { key: 'custom', label: 'Personalizada' },
+  ]
+
+  return (
+    <div className="rounded-3xl border border-gray-200 dark:border-gray-800 p-6 flex flex-col gap-5">
+      <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400">
+        Calculadora
+      </h2>
+
+      {/* Rate selector */}
+      <div className="grid grid-cols-3 gap-2">
+        {options.map((o) => (
+          <button
+            key={o.key}
+            onClick={() => setKind(o.key)}
+            aria-pressed={kind === o.key}
+            className={`rounded-xl px-3 py-2 text-sm font-semibold transition-colors ${
+              kind === o.key
+                ? 'bg-gray-900 text-white dark:bg-white dark:text-black'
+                : 'border border-gray-300 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+            }`}
+          >
+            {o.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Custom rate input */}
+      {kind === 'custom' && (
+        <label className="flex flex-col gap-1">
+          <span className="text-xs text-gray-500 dark:text-gray-400">Tasa personalizada</span>
+          <div className="flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-2">
+            <span className="text-sm text-gray-400">Bs.</span>
+            <input
+              inputMode="decimal"
+              aria-label="Tasa personalizada en bolívares"
+              aria-describedby="custom-rate-hint"
+              aria-invalid={customRate.trim() !== '' && parseNum(customRate) <= 0}
+              value={customRate}
+              onChange={(e) => setCustomRate(e.target.value)}
+              placeholder="0,00"
+              className="w-full bg-transparent outline-none"
+            />
+          </div>
+          {customRate.trim() !== '' && parseNum(customRate) <= 0 && (
+            <span id="custom-rate-hint" className="text-xs text-red-500">
+              Ingresa una tasa válida mayor a 0.
+            </span>
+          )}
+        </label>
+      )}
+
+      <div className="text-sm text-gray-500 dark:text-gray-400">
+        Tasa: <span className="font-bold text-black dark:text-white">Bs. {formatBs(rate)}</span>
+      </div>
+
+      {/* Two conversion lines */}
+      <ConversionLine inputSymbol="$" input={usd} onInput={setUsd} outputSymbol="Bs." output={usdToBs} />
+      <ConversionLine inputSymbol="Bs." input={bs} onInput={setBs} outputSymbol="$" output={bsToUsd} />
+    </div>
+  )
+}
+
+function ConversionLine({ inputSymbol, input, onInput, outputSymbol, output }) {
+  const [copied, setCopied] = useState(false)
+
+  const copy = async () => {
+    const text = formatBs(output)
+    try {
+      await navigator.clipboard.writeText(text)
+    } catch {
+      const ta = document.createElement('textarea')
+      ta.value = text
+      ta.style.position = 'fixed'
+      ta.style.opacity = '0'
+      document.body.appendChild(ta)
+      ta.select()
+      try {
+        document.execCommand('copy')
+      } finally {
+        document.body.removeChild(ta)
+      }
+    }
+    setCopied(true)
+    setTimeout(() => setCopied(false), 1200)
+  }
+
+  return (
+    <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1 rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-2 flex-1 min-w-0">
+        <span className="text-sm text-gray-400 shrink-0">{inputSymbol}</span>
+        <input
+          inputMode="decimal"
+          aria-label={`Monto en ${inputSymbol === '$' ? 'dólares' : 'bolívares'}`}
+          value={input}
+          onChange={(e) => onInput(e.target.value)}
+          placeholder="0,00"
+          className="w-full min-w-0 bg-transparent outline-none"
+        />
+      </div>
+      <span className="text-gray-400 shrink-0">→</span>
+      <div className="flex items-center gap-1 rounded-lg bg-gray-100 dark:bg-gray-800 px-3 py-2 flex-1 min-w-0">
+        <span className="text-sm text-gray-400 shrink-0">{outputSymbol}</span>
+        <span className="font-bold tabular-nums truncate">{formatBs(output)}</span>
+        <button
+          onClick={copy}
+          aria-label="Copiar resultado"
+          title="Copiar"
+          className="ml-auto shrink-0 text-xs text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+        >
+          {copied ? '✓' : '⧉'}
+        </button>
+      </div>
     </div>
   )
 }

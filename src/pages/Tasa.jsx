@@ -9,8 +9,18 @@ const REFRESH_MS = 90_000
 const nf = new Intl.NumberFormat('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 const formatBs = (n) => (n == null ? '—' : nf.format(n))
 
-// Parse a user-typed amount, accepting the Venezuelan comma decimal (e.g. "12,50").
-const parseNum = (s) => parseFloat(String(s ?? '').replace(',', '.')) || 0
+// Parse a user-typed amount. Accepts both conventions:
+//  - es-VE "1.234,56" (dot thousands, comma decimal)
+//  - plain "1234.56" / "1234,56" (single separator as decimal)
+const parseNum = (s) => {
+  const str = String(s ?? '').trim()
+  if (!str) return 0
+  const normalized =
+    str.includes('.') && str.includes(',')
+      ? str.replace(/\./g, '').replace(',', '.') // dot = thousands, comma = decimal
+      : str.replace(',', '.') // single separator → decimal
+  return parseFloat(normalized) || 0
+}
 
 function Tasa() {
   const [darkMode, setDarkMode] = useState(false)
@@ -257,17 +267,19 @@ function RateCard({ label, accent, labelColor, price, date, direction }) {
       <div className="mt-2 text-2xl font-bold">Bs. {formatBs(price)}</div>
       <div className="mt-1 text-xs text-gray-400">{date}</div>
 
-      <button
-        onClick={() => setOpen((o) => !o)}
-        aria-expanded={open}
-        className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-gray-300 dark:border-gray-700 px-2.5 py-1 text-xs font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-      >
-        <span className={stepColor}>{sign}%</span>
-        {open ? 'Ocultar ajustes' : 'Ver ajustes'}
-        <span className={`transition-transform ${open ? 'rotate-180' : ''}`}>⌄</span>
-      </button>
+      {price > 0 && (
+        <button
+          onClick={() => setOpen((o) => !o)}
+          aria-expanded={open}
+          className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-gray-300 dark:border-gray-700 px-2.5 py-1 text-xs font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+        >
+          <span className={stepColor}>{sign}%</span>
+          {open ? 'Ocultar ajustes' : 'Ver ajustes'}
+          <span className={`transition-transform ${open ? 'rotate-180' : ''}`}>⌄</span>
+        </button>
+      )}
 
-      {open && (
+      {open && price > 0 && (
         <div className="mt-3 flex flex-col gap-1 border-t border-gray-200 dark:border-gray-800 pt-3">
           {steps.map((s) => (
             <div key={s.i} className="flex items-center justify-between text-sm">
@@ -318,6 +330,7 @@ function Calculator({ data }) {
           <button
             key={o.key}
             onClick={() => setKind(o.key)}
+            aria-pressed={kind === o.key}
             className={`rounded-xl px-3 py-2 text-sm font-semibold transition-colors ${
               kind === o.key
                 ? 'bg-gray-900 text-white dark:bg-white dark:text-black'
@@ -337,12 +350,16 @@ function Calculator({ data }) {
             <span className="text-sm text-gray-400">Bs.</span>
             <input
               inputMode="decimal"
+              aria-label="Tasa personalizada en bolívares"
               value={customRate}
               onChange={(e) => setCustomRate(e.target.value)}
               placeholder="0,00"
               className="w-full bg-transparent outline-none"
             />
           </div>
+          {customRate.trim() !== '' && parseNum(customRate) <= 0 && (
+            <span className="text-xs text-red-500">Ingresa una tasa válida mayor a 0.</span>
+          )}
         </label>
       )}
 
@@ -387,6 +404,7 @@ function ConversionLine({ inputSymbol, input, onInput, outputSymbol, output }) {
         <span className="text-sm text-gray-400 shrink-0">{inputSymbol}</span>
         <input
           inputMode="decimal"
+          aria-label={`Monto en ${inputSymbol === '$' ? 'dólares' : 'bolívares'}`}
           value={input}
           onChange={(e) => onInput(e.target.value)}
           placeholder="0,00"
@@ -399,6 +417,7 @@ function ConversionLine({ inputSymbol, input, onInput, outputSymbol, output }) {
         <span className="font-bold tabular-nums truncate">{formatBs(output)}</span>
         <button
           onClick={copy}
+          aria-label="Copiar resultado"
           title="Copiar"
           className="ml-auto shrink-0 text-xs text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
         >

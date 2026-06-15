@@ -351,6 +351,8 @@ function Calculator({ data }) {
             <input
               inputMode="decimal"
               aria-label="Tasa personalizada en bolívares"
+              aria-describedby="custom-rate-hint"
+              aria-invalid={customRate.trim() !== '' && parseNum(customRate) <= 0}
               value={customRate}
               onChange={(e) => setCustomRate(e.target.value)}
               placeholder="0,00"
@@ -358,7 +360,9 @@ function Calculator({ data }) {
             />
           </div>
           {customRate.trim() !== '' && parseNum(customRate) <= 0 && (
-            <span className="text-xs text-red-500">Ingresa una tasa válida mayor a 0.</span>
+            <span id="custom-rate-hint" className="text-xs text-red-500">
+              Ingresa una tasa válida mayor a 0.
+            </span>
           )}
         </label>
       )}

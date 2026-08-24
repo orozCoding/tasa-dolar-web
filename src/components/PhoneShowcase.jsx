@@ -101,10 +101,10 @@ export function FeatureTabs({ activeIndex, onSelect, className = '' }) {
     <div
       role="tablist"
       aria-label="Funciones de la app"
-      className={`flex flex-col items-center gap-1 rounded-[26px] border border-white/10 bg-white/[0.04] p-1 backdrop-blur-sm ${className}`}
+      className={`flex flex-wrap items-center justify-center gap-1 rounded-full border border-white/10 bg-white/[0.04] p-1 backdrop-blur-sm sm:flex-col sm:rounded-[26px] ${className}`}
     >
       {TAB_ROWS.map((row, ri) => (
-        <div key={ri} className="flex items-center gap-1">
+        <div key={ri} className="contents sm:flex sm:items-center sm:gap-1">
           {row.map((f) => {
             index += 1
             const i = index
@@ -159,15 +159,20 @@ export function PhoneImage({ activeIndex, className = '', onInteract }) {
         type="button"
         onClick={openFull}
         aria-label={`Ver en grande: ${active.label}`}
-        className="block cursor-zoom-in appearance-none border-0 bg-transparent p-0"
+        className="relative block h-[50vh] sm:h-[56vh] md:h-[64vh] lg:h-[70vh] max-h-[720px] aspect-[926/1943] cursor-zoom-in appearance-none border-0 bg-transparent p-0"
       >
-        <img
-          key={active.key}
-          src={active.src}
-          alt={active.alt}
-          draggable="false"
-          className="h-[50vh] sm:h-[56vh] md:h-[64vh] lg:h-[70vh] w-auto max-h-[720px] select-none animate-rise-in drop-shadow-[0_25px_50px_rgba(0,0,0,0.6)]"
-        />
+        {FEATURES.map((f, i) => (
+          <img
+            key={f.key}
+            src={f.src}
+            alt={f.alt}
+            aria-hidden={i !== activeIndex}
+            draggable="false"
+            className={`absolute inset-0 h-full w-full select-none object-contain drop-shadow-[0_25px_50px_rgba(0,0,0,0.6)] transition-opacity duration-700 ease-out ${
+              i === activeIndex ? 'opacity-100' : 'opacity-0'
+            }`}
+          />
+        ))}
       </button>
 
       {open && (

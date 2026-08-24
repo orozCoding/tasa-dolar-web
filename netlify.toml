@@ -16,3 +16,8 @@
   [headers.values]
     X-Robots-Tag = "noindex, nofollow"
     Cache-Control = "no-store"
+
+[[headers]]
+  for = "/api/rates"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"

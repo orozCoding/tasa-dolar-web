@@ -8,15 +8,84 @@ import urls from '../constants/urls'
 import { FEATURES, FeatureTabs, PhoneImage } from '../components/PhoneShowcase'
 
 const AUTOPLAY_MS = 3000
+const RATES_POLL_MS = 120_000
 
-const RATES = [
-  { label: 'DÓLAR BCV', value: 'Bs. 784,66', change: '+0,60%', up: true },
-  { label: 'EURO BCV', value: 'Bs. 916,00', change: '+0,53%', up: true },
-  { label: 'USDT BINANCE', value: 'Bs. 918,57', change: '−0,06%', up: false },
+// Shown instantly on load (and if /api/rates is ever unreachable) so the
+// strip never looks empty or broken — replaced by live values as soon as
+// they load.
+const FALLBACK_RATES = [
+  { key: 'bcv_dolar', label: 'DÓLAR BCV', value: 'Bs. 784,66', change: '+0,60%', up: true, live: false },
+  { key: 'bcv_euro', label: 'EURO BCV', value: 'Bs. 916,00', change: '+0,53%', up: true, live: false },
+  { key: 'binance_usdt', label: 'USDT BINANCE', value: 'Bs. 918,57', change: null, up: true, live: true },
 ]
 
+const bsFormatter = new Intl.NumberFormat('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+
+function formatChange(change) {
+  if (change == null) return null
+  const sign = change >= 0 ? '+' : '−'
+  return `${sign}${bsFormatter.format(Math.abs(change))}%`
+}
+
+function useLiveRates() {
+  const [rates, setRates] = useState(FALLBACK_RATES)
+
+  useEffect(() => {
+    let cancelled = false
+
+    const load = async () => {
+      try {
+        const res = await fetch('/api/rates', { headers: { accept: 'application/json' } })
+        if (!res.ok) return
+        const data = await res.json()
+        if (cancelled) return
+
+        setRates([
+          {
+            key: 'bcv_dolar',
+            label: 'DÓLAR BCV',
+            value: data.bcv_dolar?.price != null ? `Bs. ${bsFormatter.format(data.bcv_dolar.price)}` : FALLBACK_RATES[0].value,
+            change: formatChange(data.bcv_dolar?.change),
+            up: (data.bcv_dolar?.change ?? 0) >= 0,
+            live: false,
+          },
+          {
+            key: 'bcv_euro',
+            label: 'EURO BCV',
+            value: data.bcv_euro?.price != null ? `Bs. ${bsFormatter.format(data.bcv_euro.price)}` : FALLBACK_RATES[1].value,
+            change: formatChange(data.bcv_euro?.change),
+            up: (data.bcv_euro?.change ?? 0) >= 0,
+            live: false,
+          },
+          {
+            key: 'binance_usdt',
+            label: 'USDT BINANCE',
+            value:
+              data.binance_usdt?.price != null ? `Bs. ${bsFormatter.format(data.binance_usdt.price)}` : FALLBACK_RATES[2].value,
+            change: null,
+            up: true,
+            live: true,
+          },
+        ])
+      } catch {
+        // Keep whatever we last had (fallback or previous live data).
+      }
+    }
+
+    load()
+    const id = setInterval(load, RATES_POLL_MS)
+    return () => {
+      cancelled = true
+      clearInterval(id)
+    }
+  }, [])
+
+  return rates
+}
+
 function RateStrip() {
-  const track = [...RATES, ...RATES]
+  const rates = useLiveRates()
+  const track = [...rates, ...rates]
   return (
     <div className="w-full overflow-hidden border-b border-white/10 bg-black/40">
       <div className="flex w-max animate-marquee items-center py-2 font-mono text-[11px] tracking-wide text-white/60">
@@ -24,7 +93,14 @@ function RateStrip() {
           <span key={i} className="flex items-center whitespace-nowrap px-5">
             <span className="text-white/40">{r.label}</span>
             <span className="ml-2 font-semibold text-white">{r.value}</span>
-            <span className={`ml-2 ${r.up ? 'text-[#4ec97c]' : 'text-[#f04141]'}`}>{r.change}</span>
+            {r.live ? (
+              <span className="ml-2 inline-flex items-center gap-1 text-[#4ec97c]">
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#4ec97c]" />
+                EN VIVO
+              </span>
+            ) : r.change ? (
+              <span className={r.up ? 'ml-2 text-[#4ec97c]' : 'ml-2 text-[#f04141]'}>{r.change}</span>
+            ) : null}
             <span className="ml-5 text-[#b3222b]">&bull;</span>
           </span>
         ))}
@@ -57,9 +133,19 @@ function Home() {
     setActiveIndex(i)
   }
 
+  // Belt-and-suspenders: paint the body itself so nothing white ever
+  // shows through below the fold on short/mobile viewports.
+  useEffect(() => {
+    const prevBg = document.body.style.background
+    document.body.style.background = '#0a0607'
+    return () => {
+      document.body.style.background = prevBg
+    }
+  }, [])
+
   return (
     <div
-      className="flex min-h-screen w-full flex-col text-white"
+      className="flex min-h-dvh w-full flex-col text-white"
       style={{
         background:
           'radial-gradient(ellipse 65% 50% at 50% 34%, #3a1a20 0%, #180d10 48%, #0a0607 100%)',
@@ -88,16 +174,18 @@ function Home() {
           <div className="flex flex-col items-center gap-5 text-center md:items-start md:text-left">
             <div className="flex flex-col gap-3">
               <h1 className="animate-rise-in text-2xl font-extrabold leading-tight tracking-tight sm:text-3xl md:text-4xl">
-                Tus tasas y cálculos <span className="text-[#e2495a]">en un solo lugar</span>
+                Tus tasas y cálculos
+                <br />
+                <span className="text-[#e2495a]">en un solo lugar</span>
               </h1>
               <p className="max-w-sm text-sm leading-relaxed text-white/55">
-                BCV, Euro y USDT Binance actualizadas cada día. Convierte, guarda tus cálculos y arma pagos móviles en un toque.
+                BCV Dólar, Euro y USDT Binance actualizadas cada día. Convierte, guarda tus cálculos y arma pagos móviles en un toque.
               </p>
             </div>
 
             <FeatureTabs activeIndex={activeIndex} onSelect={select} className="hidden md:flex" />
 
-            <div className="flex flex-col items-center gap-2 md:items-start">
+            <div className="flex flex-col items-center gap-4 md:items-start">
               <div className="flex flex-wrap items-center justify-center gap-3 md:justify-start">
                 <a href={urls.android} target="_blank" rel="noreferrer" className="transition-transform hover:scale-[1.03]">
                   <img className="h-11 w-auto" src={playBanner} alt="Disponible en Google Play" />

@@ -1,80 +1,124 @@
-import { Gallery } from '../components/Gallery'
+import { useEffect, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
+import CountUp from 'react-countup'
 import playBanner from '/play_store_banner.png'
 import appBanner from '/app_store_banner.svg'
-import urls from '../constants/urls'
 import logo from '/logo.png'
-import themeSwitchIcon from '/theme-switch.svg'
-import themeSwitchIconWhite from '/theme-switch-white.svg'
-import { useEffect, useState } from 'react'
-import CountUp from 'react-countup'
+import urls from '../constants/urls'
+import { FEATURES, FeatureTabs, PhoneImage } from '../components/PhoneShowcase'
+
+const AUTOPLAY_MS = 3000
+
+const RATES = [
+  { label: 'DÓLAR BCV', value: 'Bs. 784,66', change: '+0,60%', up: true },
+  { label: 'EURO BCV', value: 'Bs. 916,00', change: '+0,53%', up: true },
+  { label: 'USDT BINANCE', value: 'Bs. 918,57', change: '−0,06%', up: false },
+]
+
+function RateStrip() {
+  const track = [...RATES, ...RATES]
+  return (
+    <div className="w-full overflow-hidden border-b border-white/10 bg-black/40">
+      <div className="flex w-max animate-marquee items-center py-2 font-mono text-[11px] tracking-wide text-white/60">
+        {track.map((r, i) => (
+          <span key={i} className="flex items-center whitespace-nowrap px-5">
+            <span className="text-white/40">{r.label}</span>
+            <span className="ml-2 font-semibold text-white">{r.value}</span>
+            <span className={`ml-2 ${r.up ? 'text-[#4ec97c]' : 'text-[#f04141]'}`}>{r.change}</span>
+            <span className="ml-5 text-[#b3222b]">&bull;</span>
+          </span>
+        ))}
+      </div>
+    </div>
+  )
+}
 
 function Home() {
-  const [darkMode, setDarkMode] = useState(false)
+  const [activeIndex, setActiveIndex] = useState(0)
+  const stoppedRef = useRef(false)
 
   useEffect(() => {
-    window.matchMedia("(prefers-color-scheme: dark)").matches ?
-      setDarkMode(true) :
-      setDarkMode(false)
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (reduceMotion) return
+
+    const id = setInterval(() => {
+      if (stoppedRef.current) return
+      setActiveIndex((i) => (i + 1) % FEATURES.length)
+    }, AUTOPLAY_MS)
+    return () => clearInterval(id)
   }, [])
 
-  useEffect(() => {
-    if(darkMode) {
-      document.documentElement.classList.remove('light')
-      document.documentElement.classList.add('dark')
-    } else {
-      document.documentElement.classList.add('light')
-      document.documentElement.classList.remove('dark')
-    }
-  }, [darkMode])
+  const stopAutoplay = () => {
+    stoppedRef.current = true
+  }
+
+  const select = (i) => {
+    stopAutoplay()
+    setActiveIndex(i)
+  }
 
   return (
-    <div className="w-full px-2 py-5 text-black dark:text-white flex flex-col md:flex-row items-center justify-center gap-4 relative">
-      {/* Theme switcher */}
-      <img
-        className="w-10 rounded-md absolute top-4 left-4 cursor-pointer"
-        src={darkMode ? themeSwitchIconWhite: themeSwitchIcon}
-        onClick={() => setDarkMode(!darkMode)}
-      />
+    <div
+      className="flex min-h-screen w-full flex-col text-white"
+      style={{
+        background:
+          'radial-gradient(ellipse 65% 50% at 50% 34%, #3a1a20 0%, #180d10 48%, #0a0607 100%)',
+      }}
+    >
+      <RateStrip />
 
-      {/* Logo, title, description, banners */}
-      <div className="flex flex-col items-center justify-center gap-4 w-full md:w-1/2">
-        <img className="w-20 rounded-md" src={logo} alt="logo" />
-        <h1 className="text-4xl font-bold text-center ">
-          Tasa Dolar Venezuela
-        </h1>
-
-        <div className="text-center flex flex-col gap-4 items-center justify-center">
-          <div class="w-full flex gap-2 text-xl text-center justify-center">
-            <span>Más de </span>
-            <span class="w-20 font-bold">
-              <CountUp start={99900} end={100000} duration={10} />
-            </span>
-            <span>descargas</span>
+      <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-4 px-4 py-4 sm:py-5">
+        {/* Top bar */}
+        <div className="flex w-full items-center justify-between">
+          <div className="flex items-center gap-2">
+            <img src={logo} alt="" className="h-7 w-7 rounded-md" />
+            <span className="text-sm font-bold tracking-tight">Tasa Dolar Venezuela</span>
           </div>
-
-          <div class="w-full flex flex-col gap-2 flex-start text-center">
-            <span>🗓️&nbsp;&nbsp;Consulta la tasa del día</span>
-            <span>✖️&nbsp;&nbsp;Realiza cálculos en SEGUNDOS</span>
-            <span>🔔&nbsp;&nbsp;Notificaciones al cambiar la tasa</span>
-            <span>📲&nbsp;&nbsp;Arma solicitudes de pago</span>
-          </div>
+          <Link
+            to="/bot"
+            className="rounded-full border border-white/10 bg-white/5 px-3.5 py-1.5 text-xs font-medium text-white/70 transition-colors hover:border-white/25 hover:text-white"
+          >
+            Telegram
+          </Link>
         </div>
 
-        {/* Download buttons */}
-        <div className="w-full flex gap-4 flex-wrap items-center justify-center">
-          <a href={urls.android} target="_blank" rel="noreferrer">
-            <img className="w-40" src={playBanner} alt="play store banner" />
-          </a>
-          <a href={urls.ios} target="_blank" rel="noreferrer">
-            <img className="w-40" src={appBanner} alt="app store banner" />
-          </a>
-        </div>
-       
-      </div>
+        {/* Two-column body: left = everything but the screenshot, right = screenshot */}
+        <div className="grid flex-1 grid-cols-1 items-center gap-6 md:grid-cols-2 md:gap-10">
+          {/* Left column */}
+          <div className="flex flex-col items-center gap-5 text-center md:items-start md:text-left">
+            <div className="flex flex-col gap-3">
+              <h1 className="animate-rise-in text-2xl font-extrabold leading-tight tracking-tight sm:text-3xl md:text-4xl">
+                Tus tasas y cálculos <span className="text-[#e2495a]">en un solo lugar</span>
+              </h1>
+              <p className="max-w-sm text-sm leading-relaxed text-white/55">
+                BCV, Euro y USDT Binance actualizadas cada día. Convierte, guarda tus cálculos y arma pagos móviles en un toque.
+              </p>
+            </div>
 
-      {/* Carousel */}
-      <div className="md:w-1/2 h-[80vh] rounded-full text-center flex items-center">
-        <Gallery />
+            <FeatureTabs activeIndex={activeIndex} onSelect={select} className="hidden md:flex" />
+
+            <div className="flex flex-col items-center gap-2 md:items-start">
+              <div className="flex flex-wrap items-center justify-center gap-3 md:justify-start">
+                <a href={urls.android} target="_blank" rel="noreferrer" className="transition-transform hover:scale-[1.03]">
+                  <img className="h-11 w-auto" src={playBanner} alt="Disponible en Google Play" />
+                </a>
+                <a href={urls.ios} target="_blank" rel="noreferrer" className="transition-transform hover:scale-[1.03]">
+                  <img className="h-11 w-auto" src={appBanner} alt="Descargar en el App Store" />
+                </a>
+              </div>
+              <p className="text-center font-mono text-[10.5px] text-white/40 md:text-left">
+                Más de <CountUp end={100000} duration={1.8} separator="." className="text-white/60 font-medium" />+ descargas
+                &middot; Datos oficiales BCV &middot; &copy; 2026
+              </p>
+            </div>
+          </div>
+
+          {/* Right column: screenshot, with the tab switcher as its header on mobile */}
+          <div className="flex flex-col items-center gap-3">
+            <FeatureTabs activeIndex={activeIndex} onSelect={select} className="flex md:hidden" />
+            <PhoneImage activeIndex={activeIndex} onInteract={stopAutoplay} />
+          </div>
+        </div>
       </div>
     </div>
   )

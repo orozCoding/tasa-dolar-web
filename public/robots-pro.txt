@@ -1,0 +1,3 @@
+# app.tasadolar.com: Tasa Dolar Pro, for subscribers only.
+User-agent: *
+Disallow: /

@@ -5,7 +5,7 @@ import themeSwitchIconWhite from '/theme-switch-white.svg'
 import { TOKEN_KEY, fetchRates, fetchSession, redeemCode, storedToken, storeToken } from '../pro/api'
 import { copyText, formatBs, parseNum } from '../pro/numbers'
 import {
-  CALCULATION_TYPES, loadCalculations, rateFor, resultFor, saveCalculations, typeFor,
+  CALCULATIONS_KEY, CALCULATION_TYPES, addCalculation, loadCalculations, rateFor, removeCalculation, resultFor, typeFor,
 } from '../pro/calculations'
 
 // Tasa Dolar Pro on the web (app.tasadolar.com). Only for Google Play Pro
@@ -451,10 +451,14 @@ function SavedCalculations({ rates }) {
   const [amount, setAmount] = useState('')
   const [manualRate, setManualRate] = useState('')
 
-  const update = (next) => {
-    setCalcs(next)
-    saveCalculations(next)
-  }
+  // Another tab saved or deleted one: show the same list here.
+  useEffect(() => {
+    const onStorage = (e) => {
+      if (e.key === CALCULATIONS_KEY || e.key === null) setCalcs(loadCalculations())
+    }
+    window.addEventListener('storage', onStorage)
+    return () => window.removeEventListener('storage', onStorage)
+  }, [])
 
   const draft = { type, amount: parseNum(amount), manualRate }
   const draftResult = resultFor(draft, rates)
@@ -463,7 +467,7 @@ function SavedCalculations({ rates }) {
   const add = (e) => {
     e.preventDefault()
     if (draftResult <= 0) return
-    update([...calcs, { id: Date.now().toString(), ...draft }])
+    setCalcs(addCalculation({ id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, ...draft }))
     setAmount('')
     setManualRate('')
     setAdding(false)
@@ -483,7 +487,7 @@ function SavedCalculations({ rates }) {
       )}
 
       {calcs.map((calc) => (
-        <SavedCalculation key={calc.id} calc={calc} rates={rates} onDelete={() => update(calcs.filter((c) => c.id !== calc.id))} />
+        <SavedCalculation key={calc.id} calc={calc} rates={rates} onDelete={() => setCalcs(removeCalculation(calc.id))} />
       ))}
 
       {adding && (

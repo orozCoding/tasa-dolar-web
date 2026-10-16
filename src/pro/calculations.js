@@ -2,7 +2,7 @@
 // browser only.
 import { parseNum } from './numbers'
 
-const STORAGE_KEY = 'tasa-dolar-pro-calculations'
+export const CALCULATIONS_KEY = 'tasa-dolar-pro-calculations'
 
 export const CALCULATION_TYPES = [
   { value: 'bcv_to_bs', label: 'Dólar BCV a Bolívares', rate: 'bcv', from: '$', to: 'Bs.' },
@@ -32,7 +32,7 @@ export const resultFor = (calc, rates) => {
 
 export const loadCalculations = () => {
   try {
-    const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]')
+    const parsed = JSON.parse(localStorage.getItem(CALCULATIONS_KEY) || '[]')
     return Array.isArray(parsed) ? parsed : []
   } catch {
     return []
@@ -41,8 +41,22 @@ export const loadCalculations = () => {
 
 export const saveCalculations = (calcs) => {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(calcs))
+    localStorage.setItem(CALCULATIONS_KEY, JSON.stringify(calcs))
   } catch {
     // Storage full or blocked: keep them for this visit only.
   }
+}
+
+// Changes apply to what's stored now, not to this tab's copy, so two open
+// tabs don't overwrite each other. Return the new list.
+export const addCalculation = (calc) => {
+  const next = [...loadCalculations(), calc]
+  saveCalculations(next)
+  return next
+}
+
+export const removeCalculation = (id) => {
+  const next = loadCalculations().filter((c) => c.id !== id)
+  saveCalculations(next)
+  return next
 }

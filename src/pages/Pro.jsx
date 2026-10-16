@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import logo from '/logo.png'
 import themeSwitchIcon from '/theme-switch.svg'
 import themeSwitchIconWhite from '/theme-switch-white.svg'
-import { fetchRates, fetchSession, redeemCode, storedToken, storeToken } from '../pro/api'
+import { TOKEN_KEY, fetchRates, fetchSession, redeemCode, storedToken, storeToken } from '../pro/api'
 import { copyText, formatBs, parseNum } from '../pro/numbers'
 import {
   CALCULATION_TYPES, loadCalculations, rateFor, resultFor, saveCalculations, typeFor,
@@ -84,7 +84,11 @@ function Pro() {
 
     try {
       const result = await fetchSession(token)
-      if (!stillCurrent()) return
+      if (!stillCurrent()) {
+        // Another tab signed out meanwhile: don't stay on "Verificando".
+        if (generation === sessionGeneration.current && !storedToken()) signOut()
+        return
+      }
       if (result.error === 'signed_out') return signOut()
       if (result.error) {
         // A failed re-check while already signed in keeps the page usable.
@@ -93,9 +97,24 @@ function Pro() {
       }
       applyLicense(result.license)
     } catch {
-      if (!quiet && stillCurrent()) setStatus('error')
+      if (stillCurrent()) {
+        if (!quiet) setStatus('error')
+      } else if (generation === sessionGeneration.current && !storedToken()) {
+        signOut()
+      }
     }
   }, [])
+
+  // Signing out (or in) in another tab applies here right away.
+  useEffect(() => {
+    const onStorage = (e) => {
+      if (e.key !== TOKEN_KEY && e.key !== null) return
+      if (!storedToken()) signOut()
+      else checkSession()
+    }
+    window.addEventListener('storage', onStorage)
+    return () => window.removeEventListener('storage', onStorage)
+  }, [checkSession])
 
   useEffect(() => {
     if (storedToken()) checkSession()

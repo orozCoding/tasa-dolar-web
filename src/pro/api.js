@@ -5,7 +5,7 @@
 // VITE_PRO_API_URL points a local build at a local API for testing.
 const API = import.meta.env.VITE_PRO_API_URL || 'https://tasa-dolar-api-58e5e9d2d0fe.herokuapp.com/api/v1'
 
-const TOKEN_KEY = 'tasa-dolar-pro-token'
+export const TOKEN_KEY = 'tasa-dolar-pro-token'
 
 // Kept in memory too, for when the browser blocks storage. Storage stays the
 // source of truth whenever it works, so signing out in another tab signs

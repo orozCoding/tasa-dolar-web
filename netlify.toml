@@ -21,3 +21,15 @@
   for = "/api/rates"
   [headers.values]
     X-Robots-Tag = "noindex, nofollow"
+
+# Tasa Dolar Pro (app.tasadolar.com, and /pro on the main domain) is for
+# subscribers only; keep it out of search indexes.
+[[headers]]
+  for = "/pro"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
+
+[[headers]]
+  for = "https://app.tasadolar.com/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"

@@ -22,14 +22,12 @@
   [headers.values]
     X-Robots-Tag = "noindex, nofollow"
 
-# Tasa Dolar Pro (app.tasadolar.com, and /pro on the main domain) is for
-# subscribers only; keep it out of search indexes.
+# Tasa Dolar Pro (/pro here, and every path on app.tasadolar.com) is for
+# subscribers only; keep it out of search indexes. Header rules only match
+# paths, not hosts, so on app.tasadolar.com the page's own noindex meta tag
+# does this. Like /tasa, it is deliberately not disallowed in robots.txt, so
+# crawlers can fetch it and see the noindex.
 [[headers]]
   for = "/pro"
-  [headers.values]
-    X-Robots-Tag = "noindex, nofollow"
-
-[[headers]]
-  for = "https://app.tasadolar.com/*"
   [headers.values]
     X-Robots-Tag = "noindex, nofollow"

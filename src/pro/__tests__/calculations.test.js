@@ -1,10 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { addCalculation, removeCalculation, loadCalculations, resultFor } from '../calculations'
 
 describe('saved calculations', () => {
-  let store
+  let store, addCalculation, removeCalculation, loadCalculations, resultFor
 
-  beforeEach(() => {
+  beforeEach(async () => {
+    vi.resetModules()
+    ;({ addCalculation, removeCalculation, loadCalculations, resultFor } = await import('../calculations'))
     store = new Map()
     vi.stubGlobal('localStorage', {
       getItem: (k) => store.get(k) ?? null,
@@ -34,5 +35,30 @@ describe('saved calculations', () => {
     expect(resultFor({ type: 'bcv_to_bs', amount: 250 }, rates)).toBeCloseTo(154407.5)
     expect(resultFor({ type: 'bs_to_bcv', amount: 617.63 }, rates)).toBeCloseTo(1)
     expect(resultFor({ type: 'manual_to_bs', amount: 10, manualRate: '50,5' }, rates)).toBeCloseTo(505)
+  })
+
+  it('keeps this visit\'s calculations when storage is blocked', () => {
+    const blocked = () => { throw new Error('SecurityError') }
+    vi.stubGlobal('localStorage', { getItem: blocked, setItem: blocked, removeItem: blocked })
+
+    addCalculation({ id: 'a', type: 'bcv_to_bs', amount: 1 })
+    addCalculation({ id: 'b', type: 'bcv_to_bs', amount: 2 })
+    expect(loadCalculations().map((c) => c.id)).toEqual(['a', 'b'])
+
+    expect(removeCalculation('a').map((c) => c.id)).toEqual(['b'])
+  })
+
+  it('keeps this visit\'s calculations when storage is full', () => {
+    store.set('tasa-dolar-pro-calculations', JSON.stringify([{ id: 'old', type: 'bcv_to_bs', amount: 1 }]))
+    vi.stubGlobal('localStorage', {
+      getItem: (k) => store.get(k) ?? null,
+      setItem: () => { throw new Error('QuotaExceededError') },
+      removeItem: (k) => store.delete(k),
+    })
+
+    addCalculation({ id: 'a', type: 'bcv_to_bs', amount: 1 })
+    addCalculation({ id: 'b', type: 'bcv_to_bs', amount: 2 })
+
+    expect(loadCalculations().map((c) => c.id)).toEqual(['old', 'a', 'b'])
   })
 })

@@ -30,20 +30,29 @@ export const resultFor = (calc, rates) => {
   return typeFor(calc.type).inverse ? amount / rate : amount * rate
 }
 
+// This visit's copy, used once a write has failed (storage blocked or
+// full) so nothing saved during the visit disappears. While storage works it
+// stays the source of truth, shared with other tabs.
+let memoryCalculations = []
+let storageWorks = true
+
 export const loadCalculations = () => {
+  if (!storageWorks) return memoryCalculations
   try {
     const parsed = JSON.parse(localStorage.getItem(CALCULATIONS_KEY) || '[]')
     return Array.isArray(parsed) ? parsed : []
   } catch {
-    return []
+    return memoryCalculations
   }
 }
 
 export const saveCalculations = (calcs) => {
+  memoryCalculations = calcs
   try {
     localStorage.setItem(CALCULATIONS_KEY, JSON.stringify(calcs))
+    storageWorks = true
   } catch {
-    // Storage full or blocked: keep them for this visit only.
+    storageWorks = false
   }
 }
 

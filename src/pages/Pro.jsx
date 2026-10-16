@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import logo from '/logo.png'
 import themeSwitchIcon from '/theme-switch.svg'
 import themeSwitchIconWhite from '/theme-switch-white.svg'
@@ -39,6 +39,9 @@ function Pro() {
   // checking | signed_out | active | inactive | error
   const [status, setStatus] = useState(() => (storedToken() ? 'checking' : 'signed_out'))
   const [license, setLicense] = useState(null)
+  // Bumped on sign-in and sign-out, so a session check that was already
+  // under way can't undo either.
+  const sessionGeneration = useRef(0)
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', darkMode)
@@ -60,11 +63,13 @@ function Pro() {
   }, [])
 
   const applyLicense = (next) => {
+    sessionGeneration.current += 1
     setLicense(next)
     setStatus(next?.active ? 'active' : 'inactive')
   }
 
   const signOut = () => {
+    sessionGeneration.current += 1
     storeToken(null)
     setLicense(null)
     setStatus('signed_out')
@@ -74,9 +79,12 @@ function Pro() {
     const token = storedToken()
     if (!token) return setStatus('signed_out')
     if (!quiet) setStatus('checking')
+    const generation = sessionGeneration.current
+    const stillCurrent = () => generation === sessionGeneration.current && storedToken() === token
 
     try {
       const result = await fetchSession(token)
+      if (!stillCurrent()) return
       if (result.error === 'signed_out') return signOut()
       if (result.error) {
         // A failed re-check while already signed in keeps the page usable.
@@ -85,7 +93,7 @@ function Pro() {
       }
       applyLicense(result.license)
     } catch {
-      if (!quiet) setStatus('error')
+      if (!quiet && stillCurrent()) setStatus('error')
     }
   }, [])
 

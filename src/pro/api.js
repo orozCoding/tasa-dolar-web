@@ -7,20 +7,25 @@ const API = import.meta.env.VITE_PRO_API_URL || 'https://tasa-dolar-api-58e5e9d2
 
 const TOKEN_KEY = 'tasa-dolar-pro-token'
 
+// Kept in memory too, so the session still lasts for this tab when the
+// browser blocks storage.
+let memoryToken = null
+
 export const storedToken = () => {
   try {
-    return localStorage.getItem(TOKEN_KEY)
+    return localStorage.getItem(TOKEN_KEY) || memoryToken
   } catch {
-    return null
+    return memoryToken
   }
 }
 
 export const storeToken = (token) => {
+  memoryToken = token || null
   try {
     if (token) localStorage.setItem(TOKEN_KEY, token)
     else localStorage.removeItem(TOKEN_KEY)
   } catch {
-    // Private mode: the session lasts until the tab closes.
+    // Storage blocked: memoryToken covers this tab.
   }
 }
 

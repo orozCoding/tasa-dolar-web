@@ -31,4 +31,19 @@ describe('session token storage', () => {
     expect(store.get('tasa-dolar-pro-token')).toBe('web-token')
     expect(storedToken()).toBe('web-token')
   })
+
+  it('follows a sign-out from another tab', async () => {
+    const store = new Map()
+    vi.stubGlobal('localStorage', {
+      getItem: (k) => store.get(k) ?? null,
+      setItem: (k, v) => store.set(k, v),
+      removeItem: (k) => store.delete(k),
+    })
+    const { storeToken, storedToken } = await import('../api')
+
+    storeToken('web-token')
+    store.delete('tasa-dolar-pro-token') // the other tab signed out
+
+    expect(storedToken()).toBeNull()
+  })
 })

@@ -7,13 +7,16 @@ const API = import.meta.env.VITE_PRO_API_URL || 'https://tasa-dolar-api-58e5e9d2
 
 const TOKEN_KEY = 'tasa-dolar-pro-token'
 
-// Kept in memory too, so the session still lasts for this tab when the
-// browser blocks storage.
+// Kept in memory too, for when the browser blocks storage. Storage stays the
+// source of truth whenever it works, so signing out in another tab signs
+// this one out as well.
 let memoryToken = null
+let storageWorks = true
 
 export const storedToken = () => {
+  if (!storageWorks) return memoryToken
   try {
-    return localStorage.getItem(TOKEN_KEY) || memoryToken
+    return localStorage.getItem(TOKEN_KEY)
   } catch {
     return memoryToken
   }
@@ -24,8 +27,9 @@ export const storeToken = (token) => {
   try {
     if (token) localStorage.setItem(TOKEN_KEY, token)
     else localStorage.removeItem(TOKEN_KEY)
+    storageWorks = true
   } catch {
-    // Storage blocked: memoryToken covers this tab.
+    storageWorks = false
   }
 }
 

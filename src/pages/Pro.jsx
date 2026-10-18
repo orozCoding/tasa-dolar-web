@@ -25,10 +25,12 @@ const codeErrors = {
 }
 
 const RATE_CARDS = [
-  { key: 'bcv', label: '$ Dólar BCV', symbol: '$', accent: 'border-l-red-600', labelColor: 'text-red-600' },
-  { key: 'bcv_euro', label: '€ Euro BCV', symbol: '€', accent: 'border-l-blue-600', labelColor: 'text-blue-600 dark:text-blue-400' },
-  { key: 'binance_usdt', label: '₮ USDT Binance', symbol: '₮', accent: 'border-l-yellow-500', labelColor: 'text-yellow-600 dark:text-yellow-500' },
+  { key: 'bcv', label: '$ Dólar BCV', symbol: '$', currency: 'dólares', accent: 'border-l-red-600', labelColor: 'text-red-600' },
+  { key: 'bcv_euro', label: '€ Euro BCV', symbol: '€', currency: 'euros', accent: 'border-l-blue-600', labelColor: 'text-blue-600 dark:text-blue-400' },
+  { key: 'binance_usdt', label: '₮ USDT Binance', symbol: '₮', currency: 'USDT', accent: 'border-l-yellow-500', labelColor: 'text-yellow-600 dark:text-yellow-500' },
 ]
+
+const capitalize = (s) => (s ? s[0].toUpperCase() + s.slice(1) : s)
 
 const formatDate = (iso) => {
   if (!iso) return ''
@@ -234,7 +236,7 @@ function CodeLogin({ onSignedIn }) {
           autoFocus
           autoComplete="one-time-code"
           spellCheck={false}
-          className="w-full rounded-xl border border-gray-300 dark:border-gray-700 bg-transparent px-4 py-3 text-center text-3xl font-mono font-semibold tracking-[0.3em] uppercase outline-none focus:border-red-500"
+          className="w-full rounded-xl border border-gray-300 dark:border-gray-500 bg-transparent px-4 py-3 text-center text-3xl font-mono font-semibold tracking-[0.3em] uppercase outline-none focus:border-red-500"
         />
         {error && <p className="text-sm text-red-500 text-center">{error}</p>}
         <button
@@ -316,7 +318,9 @@ function Dashboard({ license }) {
   }
 
   const activeRate = active === 'manual' ? parseNum(manualRate) : rates[active]?.price || 0
-  const activeSymbol = active === 'manual' ? '$' : RATE_CARDS.find((c) => c.key === active)?.symbol
+  const activeCard = RATE_CARDS.find((c) => c.key === active)
+  const activeSymbol = active === 'manual' ? '$' : activeCard?.symbol
+  const activeCurrency = active === 'manual' ? 'dólares' : activeCard?.currency
 
   // What the field icons and "Usar el resultado en" put in a field: the
   // calculator's result rounded to cents, as "1.234,56". Nothing below 0.
@@ -354,6 +358,7 @@ function Dashboard({ license }) {
           <Converter
             rate={activeRate}
             symbol={activeSymbol}
+            currency={activeCurrency}
             amount={amount}
             onAmount={setAmount}
             bs={bs}
@@ -392,13 +397,36 @@ function CalculatorIcon({ className }) {
 // Its tooltip (on hover and on keyboard focus) says what a click will do.
 function FillButton({ value, onFill, field }) {
   const tooltipId = useId()
+  const [hovered, setHovered] = useState(false)
+  const [focused, setFocused] = useState(false)
+  const [dismissed, setDismissed] = useState(false)
+  const open = (hovered || focused) && !dismissed
   const label = value ? `Pegar ${value} de la calculadora en ${field}` : `Calculadora en 0: nada que pegar en ${field}`
 
+  // Escape closes the open tooltip. Caught before the calculator's own
+  // keyboard handler, where Escape would clear the result about to be pasted.
+  useEffect(() => {
+    if (!open) return
+    const onKeyDown = (e) => {
+      if (e.key !== 'Escape') return
+      e.stopPropagation()
+      setDismissed(true)
+    }
+    window.addEventListener('keydown', onKeyDown, true)
+    return () => window.removeEventListener('keydown', onKeyDown, true)
+  }, [open])
+
   return (
-    <span className="group relative shrink-0 flex">
+    <span
+      className="relative shrink-0 flex"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => { setHovered(false); setDismissed(false) }}
+    >
       <button
         type="button"
         onClick={() => value && onFill()}
+        onFocus={() => setFocused(true)}
+        onBlur={() => { setFocused(false); setDismissed(false) }}
         aria-disabled={!value}
         aria-label={label}
         aria-describedby={tooltipId}
@@ -411,7 +439,7 @@ function FillButton({ value, onFill, field }) {
       <span
         id={tooltipId}
         role="tooltip"
-        className="pointer-events-none absolute bottom-full right-0 z-20 mb-2 w-60 rounded-xl bg-gray-900/95 px-3 py-2.5 text-left text-xs font-normal normal-case tracking-normal text-white shadow-xl ring-1 ring-white/10 backdrop-blur-sm dark:bg-white/95 dark:text-gray-900 dark:ring-black/5 opacity-0 translate-y-1 scale-95 transition duration-150 ease-out group-hover:opacity-100 group-hover:translate-y-0 group-hover:scale-100 group-focus-within:opacity-100 group-focus-within:translate-y-0 group-focus-within:scale-100"
+        className={`pointer-events-none absolute bottom-full right-0 z-20 mb-2 w-60 rounded-xl bg-gray-900/95 px-3 py-2.5 text-left text-xs font-normal normal-case tracking-normal text-white shadow-xl ring-1 ring-white/10 backdrop-blur-sm dark:bg-white/95 dark:text-gray-900 dark:ring-black/5 transition duration-150 ease-out ${open ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-1 scale-95'}`}
       >
         {value ? (
           <>
@@ -515,11 +543,13 @@ function Calculator({ state, onChange, value, rates, onInject }) {
           </span>
           <div className="grid grid-cols-2 gap-2">
             {injectable.map((card) => [
-              <InjectButton key={`${card.key}-amount`} disabled={!value} title={`${card.label} a bolívares`} onClick={() => onInject(card.key, 'amount')}>
-                {card.symbol} a Bs.
+              <InjectButton key={`${card.key}-amount`} disabled={!value} onClick={() => onInject(card.key, 'amount')}>
+                {capitalize(card.currency)} a bolívares
+                <span className="block text-xs font-normal text-gray-400">{card.symbol} → Bs.</span>
               </InjectButton>,
-              <InjectButton key={`${card.key}-bs`} disabled={!value} title={`Bolívares a ${card.label}`} onClick={() => onInject(card.key, 'bs')}>
-                Bs. a {card.symbol}
+              <InjectButton key={`${card.key}-bs`} disabled={!value} onClick={() => onInject(card.key, 'bs')}>
+                Bolívares a {card.currency}
+                <span className="block text-xs font-normal text-gray-400">Bs. → {card.symbol}</span>
               </InjectButton>,
             ])}
           </div>
@@ -610,7 +640,7 @@ function ManualRateCard({ value, onChange, selected, onSelect, calcValue }) {
   )
 }
 
-function Converter({ rate, symbol, amount, onAmount, bs, onBs, calcValue, onFill, amountRef, bsRef, flashed }) {
+function Converter({ rate, symbol, currency, amount, onAmount, bs, onBs, calcValue, onFill, amountRef, bsRef, flashed }) {
   const toBs = rate > 0 ? parseNum(amount) * rate : 0
   const fromBs = rate > 0 ? parseNum(bs) / rate : 0
 
@@ -620,12 +650,12 @@ function Converter({ rate, symbol, amount, onAmount, bs, onBs, calcValue, onFill
       {rate <= 0 && <p className="text-sm text-gray-400">Elige una tasa o escribe tu tasa manual.</p>}
 
       <ConverterRow
-        label={`${symbol} a Bs.`} prefix={symbol} value={amount} onChange={onAmount}
+        label={`${capitalize(currency)} a bolívares`} hint={`${symbol} → Bs.`} prefix={symbol} value={amount} onChange={onAmount}
         result={`Bs. ${formatBs(toBs)}`} copyValue={formatBs(toBs)}
         calcValue={calcValue} onFill={() => onFill('amount')} inputRef={amountRef} flashed={flashed === 'amount'}
       />
       <ConverterRow
-        label={`Bs. a ${symbol}`} prefix="Bs." value={bs} onChange={onBs}
+        label={`Bolívares a ${currency}`} hint={`Bs. → ${symbol}`} prefix="Bs." value={bs} onChange={onBs}
         result={`${symbol} ${formatBs(fromBs)}`} copyValue={formatBs(fromBs)}
         calcValue={calcValue} onFill={() => onFill('bs')} inputRef={bsRef} flashed={flashed === 'bs'}
       />
@@ -633,7 +663,7 @@ function Converter({ rate, symbol, amount, onAmount, bs, onBs, calcValue, onFill
   )
 }
 
-function ConverterRow({ label, prefix, value, onChange, result, copyValue, calcValue, onFill, inputRef, flashed }) {
+function ConverterRow({ label, hint, prefix, value, onChange, result, copyValue, calcValue, onFill, inputRef, flashed }) {
   const [copied, setCopied] = useState(false)
 
   const copy = async () => {
@@ -644,9 +674,9 @@ function ConverterRow({ label, prefix, value, onChange, result, copyValue, calcV
 
   return (
     <div className="flex flex-col gap-1">
-      <span className="text-xs text-gray-500 dark:text-gray-400">{label}</span>
+      <span className="text-xs text-gray-500 dark:text-gray-400">{label} <span className="text-gray-400 dark:text-gray-500">({hint})</span></span>
       <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-        <div className={`flex flex-1 items-center gap-2 rounded-lg border px-3 py-2 transition-colors ${flashed ? 'border-red-500 ring-2 ring-red-500/40' : 'border-gray-300 dark:border-gray-700'}`}>
+        <div className={`flex flex-1 items-center gap-2 rounded-lg border px-3 py-2 transition-colors ${flashed ? 'border-red-500 ring-2 ring-red-500/40' : 'border-gray-300 dark:border-gray-500'}`}>
           <span className="text-sm text-gray-400">{prefix}</span>
           <input ref={inputRef} inputMode="decimal" value={value} onChange={(e) => onChange(e.target.value)} placeholder="0,00" aria-label={label} className="w-full bg-transparent outline-none tabular-nums" />
           <FillButton value={calcValue} onFill={onFill} field={`el campo «${label}»`} />
@@ -707,18 +737,18 @@ function SavedCalculations({ rates, calcValue }) {
 
       {adding && (
         <form onSubmit={add} className="flex flex-col gap-3 rounded-2xl bg-gray-100 dark:bg-gray-900 p-4">
-          <select value={type} onChange={(e) => setType(e.target.value)} aria-label="Tipo de cálculo" className="rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2">
+          <select value={type} onChange={(e) => setType(e.target.value)} aria-label="Tipo de cálculo" className="rounded-lg border border-gray-300 dark:border-gray-500 bg-white dark:bg-gray-800 px-3 py-2">
             {CALCULATION_TYPES.filter((t) => t.rate === 'manual' || rates?.[t.rate]).map((t) => (
               <option key={t.value} value={t.value}>{t.label}</option>
             ))}
           </select>
           {draftType.rate === 'manual' && (
-            <div className="flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-2">
+            <div className="flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-500 px-3 py-2">
               <input inputMode="decimal" value={manualRate} onChange={(e) => setManualRate(e.target.value)} placeholder="Tasa manual (Bs.)" aria-label="Tasa manual" className="w-full bg-transparent outline-none" />
               <FillButton value={calcValue} onFill={() => setManualRate(calcValue)} field="la tasa manual de este cálculo" />
             </div>
           )}
-          <div className="flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-2">
+          <div className="flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-500 px-3 py-2">
             <span className="text-sm text-gray-400">{draftType.from}</span>
             <input inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Monto" aria-label="Monto" autoFocus className="w-full bg-transparent outline-none" />
             <FillButton value={calcValue} onFill={() => setAmount(calcValue)} field="el monto de este cálculo" />
@@ -728,7 +758,7 @@ function SavedCalculations({ rates, calcValue }) {
           </p>
           <div className="flex gap-2">
             <button type="submit" disabled={draftResult <= 0} className="flex-1 rounded-xl bg-gray-900 dark:bg-white dark:text-black text-white px-4 py-2 font-bold disabled:opacity-40">Guardar</button>
-            <button type="button" onClick={() => setAdding(false)} className="flex-1 rounded-xl border border-gray-300 dark:border-gray-700 px-4 py-2">Cancelar</button>
+            <button type="button" onClick={() => setAdding(false)} className="flex-1 rounded-xl border border-gray-300 dark:border-gray-500 px-4 py-2">Cancelar</button>
           </div>
         </form>
       )}

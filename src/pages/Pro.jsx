@@ -369,11 +369,11 @@ function Dashboard({ license }) {
             bsRef={bsRef}
             flashed={flashed}
           />
+          <SavedCalculations rates={rates} calcValue={calcValue} />
         </div>
 
-        <div className="flex flex-col gap-6">
+        <div className="w-full self-start lg:sticky lg:top-6">
           <Calculator state={calculator} onChange={setCalculator} value={calcValue} rates={rates} onInject={injectInto} />
-          <SavedCalculations rates={rates} calcValue={calcValue} />
         </div>
       </div>
 
@@ -424,8 +424,11 @@ function FillButton({ value, onFill, field }) {
     >
       <button
         type="button"
-        onClick={() => value && onFill()}
-        onFocus={() => setFocused(true)}
+        onClick={() => {
+          setDismissed(true)
+          if (value) onFill()
+        }}
+        onFocus={(e) => setFocused(e.currentTarget.matches(':focus-visible'))}
         onBlur={() => { setFocused(false); setDismissed(false) }}
         aria-disabled={!value}
         aria-label={label}
@@ -481,17 +484,42 @@ const KEY_STYLES = {
   equals: 'bg-gray-900 text-white dark:bg-white dark:text-black hover:opacity-90',
 }
 
+// Whether keys typed now go into a field rather than the calculator.
+const isTypingTarget = (el) => el instanceof HTMLElement && (el.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName))
+
+function useTypingInField() {
+  const [inField, setInField] = useState(() => isTypingTarget(document.activeElement))
+  useEffect(() => {
+    let frame
+    // On focusout the next element isn't focused yet; check on the next frame.
+    const update = () => {
+      cancelAnimationFrame(frame)
+      frame = requestAnimationFrame(() => setInField(isTypingTarget(document.activeElement)))
+    }
+    document.addEventListener('focusin', update)
+    document.addEventListener('focusout', update)
+    return () => {
+      cancelAnimationFrame(frame)
+      document.removeEventListener('focusin', update)
+      document.removeEventListener('focusout', update)
+    }
+  }, [])
+  return inField
+}
+
 // Always on screen, unlike the app's pop-up calculator. Its result goes into
 // any field through the icon next to it, or into the converter from the
 // buttons at the bottom. Also works from the keyboard while no field has
 // focus.
 function Calculator({ state, onChange, value, rates, onInject }) {
+  const inField = useTypingInField()
+
   useEffect(() => {
     const onKeyDown = (e) => {
       if (e.ctrlKey || e.metaKey || e.altKey) return
       const target = e.target
       if (target instanceof HTMLElement) {
-        if (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)) return
+        if (isTypingTarget(target)) return
         // Enter on a focused button or link is that button's own click.
         if (e.key === 'Enter' && target.closest('button, a, [role="button"]')) return
       }
@@ -507,12 +535,36 @@ function Calculator({ state, onChange, value, rates, onInject }) {
   const injectable = RATE_CARDS.filter((card) => rates?.[card.key])
 
   return (
-    <div className="rounded-3xl border border-gray-200 dark:border-gray-800 p-6 flex flex-col gap-4 w-full">
-      <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400">Calculadora</h2>
+    <div
+      // Clicking anywhere on the calculator hands the keyboard to it.
+      onMouseDown={() => {
+        if (isTypingTarget(document.activeElement)) document.activeElement.blur()
+      }}
+      className={`rounded-3xl border p-6 flex flex-col gap-4 w-full transition-[border-color,box-shadow] ${
+        inField ? 'border-gray-200 dark:border-gray-800' : 'border-red-500/70 ring-4 ring-red-500/10 shadow-lg'
+      }`}
+    >
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 min-h-5">
+        <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400">Calculadora</h2>
+        {inField ? (
+          <span className="text-xs text-gray-400 whitespace-nowrap">Tu teclado está en un campo · clic aquí para usarlo</span>
+        ) : (
+          <span className="flex items-center gap-1.5 whitespace-nowrap text-xs font-semibold text-red-600 dark:text-red-400">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500 opacity-60" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-red-500" />
+            </span>
+            Tu teclado escribe aquí
+          </span>
+        )}
+      </div>
 
       <div className="rounded-2xl bg-white border border-gray-200 dark:border-transparent dark:bg-gray-900 px-4 py-3 text-right flex flex-col justify-end min-h-[4.75rem]" aria-live="polite">
         <span className="text-xs text-gray-400 h-4 tabular-nums">{state.op ? `${formatDisplay(String(state.prev))} ${state.op}` : ''}</span>
-        <span className="text-3xl font-bold tabular-nums break-all">{formatDisplay(state.display)}</span>
+        <span className="text-3xl font-bold tabular-nums break-all">
+          {formatDisplay(state.display)}
+          {!inField && <span className="ml-1 inline-block h-7 w-0.5 -mb-0.5 rounded bg-red-500 animate-pulse" aria-hidden="true" />}
+        </span>
       </div>
 
       <div className="grid grid-cols-4 gap-2">
@@ -617,7 +669,7 @@ function ManualRateCard({ value, onChange, selected, onSelect, calcValue }) {
   return (
     <div
       onClick={onSelect}
-      className={`rounded-2xl border border-l-4 border-l-gray-500 p-5 cursor-pointer transition-colors ${
+      className={`rounded-2xl border border-l-4 border-l-gray-500 p-5 cursor-pointer transition-colors focus-within:ring-2 focus-within:ring-red-500/40 ${
         selected ? 'border-gray-900 dark:border-white bg-white dark:bg-gray-900' : 'border-gray-200 dark:border-gray-800 bg-white/60 dark:bg-gray-900/60'
       }`}
     >
@@ -676,7 +728,7 @@ function ConverterRow({ label, hint, prefix, value, onChange, result, copyValue,
     <div className="flex flex-col gap-1">
       <span className="text-xs text-gray-500 dark:text-gray-400">{label} <span className="text-gray-400 dark:text-gray-500">({hint})</span></span>
       <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-        <div className={`flex flex-1 items-center gap-2 rounded-lg border px-3 py-2 transition-colors ${flashed ? 'border-red-500 ring-2 ring-red-500/40' : 'border-gray-300 dark:border-gray-500'}`}>
+        <div className={`flex flex-1 items-center gap-2 rounded-lg border px-3 py-2 transition-colors ${flashed ? 'border-red-500 ring-2 ring-red-500/40' : `border-gray-300 dark:border-gray-500 focus-within:border-red-500 focus-within:ring-2 focus-within:ring-red-500/30`}`}>
           <span className="text-sm text-gray-400">{prefix}</span>
           <input ref={inputRef} inputMode="decimal" value={value} onChange={(e) => onChange(e.target.value)} placeholder="0,00" aria-label={label} className="w-full bg-transparent outline-none tabular-nums" />
           <FillButton value={calcValue} onFill={onFill} field={`el campo «${label}»`} />
@@ -737,18 +789,18 @@ function SavedCalculations({ rates, calcValue }) {
 
       {adding && (
         <form onSubmit={add} className="flex flex-col gap-3 rounded-2xl bg-gray-100 dark:bg-gray-900 p-4">
-          <select value={type} onChange={(e) => setType(e.target.value)} aria-label="Tipo de cálculo" className="rounded-lg border border-gray-300 dark:border-gray-500 bg-white dark:bg-gray-800 px-3 py-2">
+          <select value={type} onChange={(e) => setType(e.target.value)} aria-label="Tipo de cálculo" className="rounded-lg border border-gray-300 dark:border-gray-500 bg-white dark:bg-gray-800 px-3 py-2 outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/30">
             {CALCULATION_TYPES.filter((t) => t.rate === 'manual' || rates?.[t.rate]).map((t) => (
               <option key={t.value} value={t.value}>{t.label}</option>
             ))}
           </select>
           {draftType.rate === 'manual' && (
-            <div className="flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-500 px-3 py-2">
+            <div className="flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-500 px-3 py-2 focus-within:border-red-500 focus-within:ring-2 focus-within:ring-red-500/30">
               <input inputMode="decimal" value={manualRate} onChange={(e) => setManualRate(e.target.value)} placeholder="Tasa manual (Bs.)" aria-label="Tasa manual" className="w-full bg-transparent outline-none" />
               <FillButton value={calcValue} onFill={() => setManualRate(calcValue)} field="la tasa manual de este cálculo" />
             </div>
           )}
-          <div className="flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-500 px-3 py-2">
+          <div className="flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-500 px-3 py-2 focus-within:border-red-500 focus-within:ring-2 focus-within:ring-red-500/30">
             <span className="text-sm text-gray-400">{draftType.from}</span>
             <input inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Monto" aria-label="Monto" autoFocus className="w-full bg-transparent outline-none" />
             <FillButton value={calcValue} onFill={() => setAmount(calcValue)} field="el monto de este cálculo" />

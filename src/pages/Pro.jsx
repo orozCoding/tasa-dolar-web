@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useRef, useState } from 'react'
 import logo from '/logo.png'
 import themeSwitchIcon from '/theme-switch.svg'
 import themeSwitchIconWhite from '/theme-switch-white.svg'
@@ -389,19 +389,52 @@ function CalculatorIcon({ className }) {
 }
 
 // The calculator icon next to a field: puts the calculator's result in it.
-function FillButton({ value, onFill }) {
-  const label = value ? `Usar el resultado de la calculadora (${value})` : 'La calculadora está en 0'
+// Its tooltip (on hover and on keyboard focus) says what a click will do.
+function FillButton({ value, onFill, field }) {
+  const tooltipId = useId()
+  const label = value ? `Pegar ${value} de la calculadora en ${field}` : `Calculadora en 0: nada que pegar en ${field}`
+
   return (
-    <button
-      type="button"
-      onClick={onFill}
-      disabled={!value}
-      title={label}
-      aria-label={label}
-      className="shrink-0 rounded-md p-1 text-gray-400 hover:text-red-600 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-30 disabled:pointer-events-none"
-    >
-      <CalculatorIcon className="w-5 h-5" />
-    </button>
+    <span className="group relative shrink-0 flex">
+      <button
+        type="button"
+        onClick={() => value && onFill()}
+        aria-disabled={!value}
+        aria-label={label}
+        aria-describedby={tooltipId}
+        className={`rounded-md p-1 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-red-500/60 ${
+          value ? 'text-gray-400 hover:text-red-600 hover:bg-gray-100 dark:hover:bg-gray-800' : 'text-gray-400 opacity-30 cursor-default'
+        }`}
+      >
+        <CalculatorIcon className="w-5 h-5" />
+      </button>
+      <span
+        id={tooltipId}
+        role="tooltip"
+        className="pointer-events-none absolute bottom-full right-0 z-20 mb-2 w-60 rounded-xl bg-gray-900/95 px-3 py-2.5 text-left text-xs font-normal normal-case tracking-normal text-white shadow-xl ring-1 ring-white/10 backdrop-blur-sm dark:bg-white/95 dark:text-gray-900 dark:ring-black/5 opacity-0 translate-y-1 scale-95 transition duration-150 ease-out group-hover:opacity-100 group-hover:translate-y-0 group-hover:scale-100 group-focus-within:opacity-100 group-focus-within:translate-y-0 group-focus-within:scale-100"
+      >
+        {value ? (
+          <>
+            <span className="flex items-center gap-1.5 font-semibold">
+              <CalculatorIcon className="w-3.5 h-3.5" /> Usar el resultado
+            </span>
+            <span className="mt-1 block leading-snug text-gray-300 dark:text-gray-600">
+              Pega <b className="tabular-nums text-white dark:text-gray-900">{value}</b> de la calculadora en {field}. Reemplaza lo que haya escrito.
+            </span>
+          </>
+        ) : (
+          <>
+            <span className="flex items-center gap-1.5 font-semibold">
+              <CalculatorIcon className="w-3.5 h-3.5" /> Pega desde la calculadora
+            </span>
+            <span className="mt-1 block leading-snug text-gray-300 dark:text-gray-600">
+              Haz una cuenta en la calculadora y toca aquí para poner el resultado en {field}.
+            </span>
+          </>
+        )}
+        <span className="absolute -bottom-1 right-2.5 h-2 w-2 rotate-45 bg-gray-900/95 dark:bg-white/95" />
+      </span>
+    </span>
   )
 }
 
@@ -570,7 +603,7 @@ function ManualRateCard({ value, onChange, selected, onSelect, calcValue }) {
           aria-label="Tasa manual en bolívares"
           className="w-full bg-transparent outline-none tabular-nums"
         />
-        <FillButton value={calcValue} onFill={() => onChange(calcValue)} />
+        <FillButton value={calcValue} onFill={() => onChange(calcValue)} field="tu tasa manual" />
       </div>
       <div className="mt-1 text-xs text-gray-400">tu tasa manual</div>
     </div>
@@ -616,7 +649,7 @@ function ConverterRow({ label, prefix, value, onChange, result, copyValue, calcV
         <div className={`flex flex-1 items-center gap-2 rounded-lg border px-3 py-2 transition-colors ${flashed ? 'border-red-500 ring-2 ring-red-500/40' : 'border-gray-300 dark:border-gray-700'}`}>
           <span className="text-sm text-gray-400">{prefix}</span>
           <input ref={inputRef} inputMode="decimal" value={value} onChange={(e) => onChange(e.target.value)} placeholder="0,00" aria-label={label} className="w-full bg-transparent outline-none tabular-nums" />
-          <FillButton value={calcValue} onFill={onFill} />
+          <FillButton value={calcValue} onFill={onFill} field={`el campo «${label}»`} />
         </div>
         <button onClick={copy} className="flex-1 text-left sm:text-right text-lg font-bold tabular-nums hover:opacity-80" title="Copiar">
           {copied ? '¡Copiado!' : result}
@@ -682,13 +715,13 @@ function SavedCalculations({ rates, calcValue }) {
           {draftType.rate === 'manual' && (
             <div className="flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-2">
               <input inputMode="decimal" value={manualRate} onChange={(e) => setManualRate(e.target.value)} placeholder="Tasa manual (Bs.)" aria-label="Tasa manual" className="w-full bg-transparent outline-none" />
-              <FillButton value={calcValue} onFill={() => setManualRate(calcValue)} />
+              <FillButton value={calcValue} onFill={() => setManualRate(calcValue)} field="la tasa manual de este cálculo" />
             </div>
           )}
           <div className="flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-2">
             <span className="text-sm text-gray-400">{draftType.from}</span>
             <input inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Monto" aria-label="Monto" autoFocus className="w-full bg-transparent outline-none" />
-            <FillButton value={calcValue} onFill={() => setAmount(calcValue)} />
+            <FillButton value={calcValue} onFill={() => setAmount(calcValue)} field="el monto de este cálculo" />
           </div>
           <p className="text-sm">
             Resultado: <b className="tabular-nums">{draftType.to} {formatBs(draftResult)}</b>

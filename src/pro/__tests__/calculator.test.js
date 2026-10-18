@@ -39,6 +39,12 @@ describe('pressKey', () => {
     expect(press(['1', '2', '+', '⌫']).display).toBe('12')
   })
 
+  it('clears a scientific-notation result with ⌫ instead of mangling it', () => {
+    const big = press([...Array(15).fill('9'), '×', ...Array(15).fill('9'), '='])
+    expect(big.display).toMatch(/e/)
+    expect(pressKey(big, '⌫').display).toBe('0')
+  })
+
   it('clears everything with C', () => {
     expect(press(['5', '+', '3', 'C'])).toEqual(initialCalculator)
   })

@@ -459,8 +459,13 @@ function Calculator({ state, onChange, value, rates, onInject }) {
           <button
             key={key}
             type="button"
-            // Clicking doesn't take focus, so Enter keeps meaning "=".
-            onMouseDown={(e) => e.preventDefault()}
+            // Clicking leaves nothing focused: not the key, so Enter keeps
+            // meaning "=", and not a field typed in before, so the keyboard
+            // goes on working the calculator.
+            onMouseDown={(e) => {
+              e.preventDefault()
+              if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
+            }}
             onClick={() => onChange((s) => pressKey(s, key))}
             aria-label={key === '.' ? 'Coma decimal' : key === '⌫' ? 'Borrar' : key === 'C' ? 'Limpiar' : undefined}
             className={`h-12 rounded-xl text-lg font-bold transition-colors ${KEY_STYLES[kind]} ${span === 2 ? 'col-span-2' : ''}`}

@@ -27,6 +27,8 @@ export const pressKey = (state, key) => {
   if (key === '⌫') {
     // Right after an operator there is nothing typed yet to erase.
     if (resetNext && op) return state
+    // A huge or tiny result like "1e+21" can't lose a character and stay right.
+    if (/e/i.test(display)) return { ...state, display: '0', resetNext: false }
     const next = display.slice(0, -1)
     return { ...state, display: next === '' || next === '-' ? '0' : next, resetNext: false }
   }

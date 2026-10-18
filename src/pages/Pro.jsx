@@ -7,6 +7,7 @@ import { copyText, formatBs, parseNum } from '../pro/numbers'
 import {
   CALCULATIONS_KEY, CALCULATION_TYPES, addCalculation, loadCalculations, rateFor, removeCalculation, resultFor, typeFor,
 } from '../pro/calculations'
+import { formatDisplay, initialCalculator, keyFromKeyboard, pressKey, resultOf } from '../pro/calculator'
 
 // Tasa Dolar Pro on the web (app.tasadolar.com). Only for Google Play Pro
 // subscribers: they sign in with a one-time code from the Android app
@@ -279,6 +280,13 @@ function Dashboard({ license }) {
   const [ratesError, setRatesError] = useState(false)
   const [active, setActive] = useState('bcv')
   const [manualRate, setManualRate] = useState('')
+  const [amount, setAmount] = useState('')
+  const [bs, setBs] = useState('')
+  const [calculator, setCalculator] = useState(initialCalculator)
+  const [flashed, setFlashed] = useState(null)
+  const flashTimer = useRef(null)
+  const amountRef = useRef(null)
+  const bsRef = useRef(null)
 
   const load = useCallback(async () => {
     try {
@@ -295,6 +303,8 @@ function Dashboard({ license }) {
     return () => clearInterval(id)
   }, [load])
 
+  useEffect(() => () => clearTimeout(flashTimer.current), [])
+
   if (!rates && !ratesError) return <div className="animate-pulse text-gray-400 mt-20">Cargando tasas…</div>
   if (!rates) {
     return (
@@ -308,6 +318,28 @@ function Dashboard({ license }) {
   const activeRate = active === 'manual' ? parseNum(manualRate) : rates[active]?.price || 0
   const activeSymbol = active === 'manual' ? '$' : RATE_CARDS.find((c) => c.key === active)?.symbol
 
+  // What the field icons and "Usar el resultado en" put in a field: the
+  // calculator's result rounded to cents, as "1.234,56". Nothing below 0.
+  const calcResult = resultOf(calculator)
+  const calcValue = calcResult > 0 ? formatBs(calcResult) : null
+
+  // Fills a converter field from the calculator and points at it, since on a
+  // phone it can be off screen.
+  const fillConverter = (field) => {
+    if (!calcValue) return
+    const ref = field === 'amount' ? amountRef : bsRef
+    ;(field === 'amount' ? setAmount : setBs)(calcValue)
+    ref.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+    setFlashed(field)
+    clearTimeout(flashTimer.current)
+    flashTimer.current = setTimeout(() => setFlashed(null), 1200)
+  }
+
+  const injectInto = (rateKey, field) => {
+    setActive(rateKey)
+    fillConverter(field)
+  }
+
   return (
     <div className="w-full flex flex-col gap-6">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -316,13 +348,28 @@ function Dashboard({ license }) {
             {RATE_CARDS.map((card) => (
               <RateCard key={card.key} card={card} rate={rates[card.key]} selected={active === card.key} onSelect={() => setActive(card.key)} />
             ))}
-            <ManualRateCard value={manualRate} onChange={setManualRate} selected={active === 'manual'} onSelect={() => setActive('manual')} />
+            <ManualRateCard value={manualRate} onChange={setManualRate} selected={active === 'manual'} onSelect={() => setActive('manual')} calcValue={calcValue} />
           </div>
           {ratesError && <p className="text-xs text-red-500">No pudimos actualizar las tasas. Mostrando las últimas cargadas.</p>}
-          <Converter rate={activeRate} symbol={activeSymbol} />
+          <Converter
+            rate={activeRate}
+            symbol={activeSymbol}
+            amount={amount}
+            onAmount={setAmount}
+            bs={bs}
+            onBs={setBs}
+            calcValue={calcValue}
+            onFill={fillConverter}
+            amountRef={amountRef}
+            bsRef={bsRef}
+            flashed={flashed}
+          />
         </div>
 
-        <SavedCalculations rates={rates} />
+        <div className="flex flex-col gap-6">
+          <Calculator state={calculator} onChange={setCalculator} value={calcValue} rates={rates} onInject={injectInto} />
+          <SavedCalculations rates={rates} calcValue={calcValue} />
+        </div>
       </div>
 
       <p className="text-center text-xs text-gray-400">
@@ -330,6 +377,129 @@ function Dashboard({ license }) {
         {license?.expires_at ? ` · válido hasta el ${formatDate(license.expires_at)}` : ''}
       </p>
     </div>
+  )
+}
+
+function CalculatorIcon({ className }) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className} aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 15.75V18m-7.5-6.75h.008v.008H8.25v-.008Zm0 2.25h.008v.008H8.25V13.5Zm0 2.25h.008v.008H8.25v-.008Zm0 2.25h.008v.008H8.25V18Zm2.498-6.75h.007v.008h-.007v-.008Zm0 2.25h.007v.008h-.007V13.5Zm0 2.25h.007v.008h-.007v-.008Zm0 2.25h.007v.008h-.007V18Zm2.504-6.75h.008v.008h-.008v-.008Zm0 2.25h.008v.008h-.008V13.5Zm0 2.25h.008v.008h-.008v-.008Zm0 2.25h.008v.008h-.008V18Zm2.498-6.75h.008v.008h-.008v-.008Zm0 2.25h.008v.008h-.008V13.5ZM8.25 6h7.5v2.25h-7.5V6ZM12 2.25c-1.892 0-3.758.11-5.593.322C5.307 2.7 4.5 3.65 4.5 4.757V19.5a2.25 2.25 0 0 0 2.25 2.25h10.5a2.25 2.25 0 0 0 2.25-2.25V4.757c0-1.108-.806-2.057-1.907-2.185A48.507 48.507 0 0 0 12 2.25Z" />
+    </svg>
+  )
+}
+
+// The calculator icon next to a field: puts the calculator's result in it.
+function FillButton({ value, onFill }) {
+  const label = value ? `Usar el resultado de la calculadora (${value})` : 'La calculadora está en 0'
+  return (
+    <button
+      type="button"
+      onClick={onFill}
+      disabled={!value}
+      title={label}
+      aria-label={label}
+      className="shrink-0 rounded-md p-1 text-gray-400 hover:text-red-600 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-30 disabled:pointer-events-none"
+    >
+      <CalculatorIcon className="w-5 h-5" />
+    </button>
+  )
+}
+
+const CALCULATOR_KEYS = [
+  { key: 'C', kind: 'action', span: 2 }, { key: '⌫', kind: 'action' }, { key: '÷', kind: 'op' },
+  { key: '7' }, { key: '8' }, { key: '9' }, { key: '×', kind: 'op' },
+  { key: '4' }, { key: '5' }, { key: '6' }, { key: '−', kind: 'op' },
+  { key: '1' }, { key: '2' }, { key: '3' }, { key: '+', kind: 'op' },
+  { key: '0', span: 2 }, { key: '.', label: ',' }, { key: '=', kind: 'equals' },
+]
+
+const KEY_STYLES = {
+  digit: 'bg-white border border-gray-200 dark:border-transparent dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700',
+  action: 'bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500',
+  op: 'bg-red-600 text-white hover:bg-red-700',
+  equals: 'bg-gray-900 text-white dark:bg-white dark:text-black hover:opacity-90',
+}
+
+// Always on screen, unlike the app's pop-up calculator. Its result goes into
+// any field through the icon next to it, or into the converter from the
+// buttons at the bottom. Also works from the keyboard while no field has
+// focus.
+function Calculator({ state, onChange, value, rates, onInject }) {
+  useEffect(() => {
+    const onKeyDown = (e) => {
+      if (e.ctrlKey || e.metaKey || e.altKey) return
+      const target = e.target
+      if (target instanceof HTMLElement) {
+        if (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)) return
+        // Enter on a focused button or link is that button's own click.
+        if (e.key === 'Enter' && target.closest('button, a, [role="button"]')) return
+      }
+      const key = keyFromKeyboard(e.key)
+      if (!key) return
+      e.preventDefault()
+      onChange((s) => pressKey(s, key))
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [onChange])
+
+  const injectable = RATE_CARDS.filter((card) => rates?.[card.key])
+
+  return (
+    <div className="rounded-3xl border border-gray-200 dark:border-gray-800 p-6 flex flex-col gap-4 w-full">
+      <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400">Calculadora</h2>
+
+      <div className="rounded-2xl bg-white border border-gray-200 dark:border-transparent dark:bg-gray-900 px-4 py-3 text-right flex flex-col justify-end min-h-[4.75rem]" aria-live="polite">
+        <span className="text-xs text-gray-400 h-4 tabular-nums">{state.op ? `${formatDisplay(String(state.prev))} ${state.op}` : ''}</span>
+        <span className="text-3xl font-bold tabular-nums break-all">{formatDisplay(state.display)}</span>
+      </div>
+
+      <div className="grid grid-cols-4 gap-2">
+        {CALCULATOR_KEYS.map(({ key, label, kind = 'digit', span }) => (
+          <button
+            key={key}
+            type="button"
+            // Clicking doesn't take focus, so Enter keeps meaning "=".
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => onChange((s) => pressKey(s, key))}
+            aria-label={key === '.' ? 'Coma decimal' : key === '⌫' ? 'Borrar' : key === 'C' ? 'Limpiar' : undefined}
+            className={`h-12 rounded-xl text-lg font-bold transition-colors ${KEY_STYLES[kind]} ${span === 2 ? 'col-span-2' : ''}`}
+          >
+            {label || key}
+          </button>
+        ))}
+      </div>
+
+      {injectable.length > 0 && (
+        <div className="flex flex-col gap-2 border-t border-gray-200 dark:border-gray-800 pt-4">
+          <span className="text-xs text-gray-500 dark:text-gray-400">
+            Usar el resultado{value ? <> (<b className="tabular-nums">{value}</b>)</> : ''} en
+          </span>
+          <div className="grid grid-cols-2 gap-2">
+            {injectable.map((card) => [
+              <InjectButton key={`${card.key}-amount`} disabled={!value} title={`${card.label} a bolívares`} onClick={() => onInject(card.key, 'amount')}>
+                {card.symbol} a Bs.
+              </InjectButton>,
+              <InjectButton key={`${card.key}-bs`} disabled={!value} title={`Bolívares a ${card.label}`} onClick={() => onInject(card.key, 'bs')}>
+                Bs. a {card.symbol}
+              </InjectButton>,
+            ])}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function InjectButton({ children, ...props }) {
+  return (
+    <button
+      type="button"
+      {...props}
+      className="rounded-xl border border-gray-300 dark:border-gray-500 bg-white/60 dark:bg-gray-800 px-3 py-2 text-sm font-semibold hover:border-red-500 hover:text-red-600 disabled:opacity-40 disabled:pointer-events-none transition-colors"
+    >
+      {children}
+    </button>
   )
 }
 
@@ -375,7 +545,7 @@ function RateCard({ card, rate, selected, onSelect }) {
   )
 }
 
-function ManualRateCard({ value, onChange, selected, onSelect }) {
+function ManualRateCard({ value, onChange, selected, onSelect, calcValue }) {
   return (
     <div
       onClick={onSelect}
@@ -395,31 +565,37 @@ function ManualRateCard({ value, onChange, selected, onSelect }) {
           aria-label="Tasa manual en bolívares"
           className="w-full bg-transparent outline-none tabular-nums"
         />
+        <FillButton value={calcValue} onFill={() => onChange(calcValue)} />
       </div>
       <div className="mt-1 text-xs text-gray-400">tu tasa manual</div>
     </div>
   )
 }
 
-function Converter({ rate, symbol }) {
-  const [amount, setAmount] = useState('')
-  const [bs, setBs] = useState('')
-
+function Converter({ rate, symbol, amount, onAmount, bs, onBs, calcValue, onFill, amountRef, bsRef, flashed }) {
   const toBs = rate > 0 ? parseNum(amount) * rate : 0
   const fromBs = rate > 0 ? parseNum(bs) / rate : 0
 
   return (
     <div className="rounded-3xl border border-gray-200 dark:border-gray-800 p-6 flex flex-col gap-4">
-      <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400">Calculadora</h2>
+      <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400">Conversión</h2>
       {rate <= 0 && <p className="text-sm text-gray-400">Elige una tasa o escribe tu tasa manual.</p>}
 
-      <ConverterRow label={`${symbol} a Bs.`} prefix={symbol} value={amount} onChange={setAmount} result={`Bs. ${formatBs(toBs)}`} copyValue={formatBs(toBs)} />
-      <ConverterRow label={`Bs. a ${symbol}`} prefix="Bs." value={bs} onChange={setBs} result={`${symbol} ${formatBs(fromBs)}`} copyValue={formatBs(fromBs)} />
+      <ConverterRow
+        label={`${symbol} a Bs.`} prefix={symbol} value={amount} onChange={onAmount}
+        result={`Bs. ${formatBs(toBs)}`} copyValue={formatBs(toBs)}
+        calcValue={calcValue} onFill={() => onFill('amount')} inputRef={amountRef} flashed={flashed === 'amount'}
+      />
+      <ConverterRow
+        label={`Bs. a ${symbol}`} prefix="Bs." value={bs} onChange={onBs}
+        result={`${symbol} ${formatBs(fromBs)}`} copyValue={formatBs(fromBs)}
+        calcValue={calcValue} onFill={() => onFill('bs')} inputRef={bsRef} flashed={flashed === 'bs'}
+      />
     </div>
   )
 }
 
-function ConverterRow({ label, prefix, value, onChange, result, copyValue }) {
+function ConverterRow({ label, prefix, value, onChange, result, copyValue, calcValue, onFill, inputRef, flashed }) {
   const [copied, setCopied] = useState(false)
 
   const copy = async () => {
@@ -432,9 +608,10 @@ function ConverterRow({ label, prefix, value, onChange, result, copyValue }) {
     <div className="flex flex-col gap-1">
       <span className="text-xs text-gray-500 dark:text-gray-400">{label}</span>
       <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-        <div className="flex flex-1 items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-2">
+        <div className={`flex flex-1 items-center gap-2 rounded-lg border px-3 py-2 transition-colors ${flashed ? 'border-red-500 ring-2 ring-red-500/40' : 'border-gray-300 dark:border-gray-700'}`}>
           <span className="text-sm text-gray-400">{prefix}</span>
-          <input inputMode="decimal" value={value} onChange={(e) => onChange(e.target.value)} placeholder="0,00" aria-label={label} className="w-full bg-transparent outline-none tabular-nums" />
+          <input ref={inputRef} inputMode="decimal" value={value} onChange={(e) => onChange(e.target.value)} placeholder="0,00" aria-label={label} className="w-full bg-transparent outline-none tabular-nums" />
+          <FillButton value={calcValue} onFill={onFill} />
         </div>
         <button onClick={copy} className="flex-1 text-left sm:text-right text-lg font-bold tabular-nums hover:opacity-80" title="Copiar">
           {copied ? '¡Copiado!' : result}
@@ -444,7 +621,7 @@ function ConverterRow({ label, prefix, value, onChange, result, copyValue }) {
   )
 }
 
-function SavedCalculations({ rates }) {
+function SavedCalculations({ rates, calcValue }) {
   const [calcs, setCalcs] = useState(loadCalculations)
   const [adding, setAdding] = useState(false)
   const [type, setType] = useState('bcv_to_bs')
@@ -498,11 +675,15 @@ function SavedCalculations({ rates }) {
             ))}
           </select>
           {draftType.rate === 'manual' && (
-            <input inputMode="decimal" value={manualRate} onChange={(e) => setManualRate(e.target.value)} placeholder="Tasa manual (Bs.)" aria-label="Tasa manual" className="rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent px-3 py-2" />
+            <div className="flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-2">
+              <input inputMode="decimal" value={manualRate} onChange={(e) => setManualRate(e.target.value)} placeholder="Tasa manual (Bs.)" aria-label="Tasa manual" className="w-full bg-transparent outline-none" />
+              <FillButton value={calcValue} onFill={() => setManualRate(calcValue)} />
+            </div>
           )}
           <div className="flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-2">
             <span className="text-sm text-gray-400">{draftType.from}</span>
             <input inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Monto" aria-label="Monto" autoFocus className="w-full bg-transparent outline-none" />
+            <FillButton value={calcValue} onFill={() => setAmount(calcValue)} />
           </div>
           <p className="text-sm">
             Resultado: <b className="tabular-nums">{draftType.to} {formatBs(draftResult)}</b>
